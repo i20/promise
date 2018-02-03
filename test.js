@@ -1,6 +1,6 @@
 //////////////////////////////////////
 
-// var p1 = Q(function (resolve, reject) {
+// var p1 = Promise.exec(function (resolve, reject) {
 //     console.log('START TIMER 1');
 //     setTimeout(resolve, 1000, 'exec1');
 // });
@@ -8,7 +8,7 @@
 // var p2 = p1.then(function (value) {
 //     console.log('TIMER 1 = ' + value);
 //     console.log('START TIMER 2');
-//     return Q(function (resolve, reject) {
+//     return Promise.exec(function (resolve, reject) {
 //         setTimeout(resolve, 1000, 'exec2');
 //     });
 // });
@@ -41,7 +41,7 @@
 //     .then(function () { console.log('P1 RESOLVED'); })
 //     .then(function () { console.log('P8 OK'); }, function () { console.log('P8 KO'); });
 
-var p9 = Q(function (resolve, reject, notify) {
+var p9 = Promise.exec(function (resolve, reject, notify) {
 
     var i = 0;
 

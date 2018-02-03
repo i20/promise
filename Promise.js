@@ -1,15 +1,5 @@
 // TODO implement finally
-// TODO implement notify
-
-(function (window, undefined) {
-
-/**/
-var object_create = Object.create || function (prototype) {
-    function Type () {}
-    Type.prototype = prototype;
-    return new Type();
-};
-/**/
+(function (global, undefined) {
 
 function convert (callback, param) {
 
@@ -26,7 +16,7 @@ function convert (callback, param) {
         success = false;
     }
 
-    return value instanceof Promise ? value : Q(function (resolve, reject) {
+    return value instanceof Promise ? value : Promise.exec(function (resolve, reject) {
         (success ? resolve : reject)(value);
     });
 }
@@ -44,6 +34,8 @@ function noopReject (error) {
 function Promise (_executor) {
 
     var self = this;
+
+    if (self === global) throw 'Keyword "new" required to create a Promise';
 
     var _state = 0; // 0 pending, 1 executing, 2 resolved, 3 rejected
     var _value;
@@ -76,14 +68,6 @@ function Promise (_executor) {
 
         // Promise is not solved yet
         if (_state < 2) {
-
-            /**/
-            var deferred = Promise.defer();
-            _queue.push(function () {
-                return _spawn(resolve, reject).then(deferred.resolve, deferred.reject);
-            });
-            return deferred.promise;
-            /**/
 
             var promise = new Promise(function (nextResolve, nextReject) {
                 _spawn(resolve, reject).then(nextResolve, nextReject);
@@ -131,23 +115,18 @@ function Promise (_executor) {
     }
 }
 
-Promise.defer = function () {
-
-
-};
-
-function Q (executor) {
+Promise.exec = function (executor) {
 
     return new Promise(executor).execute();
-}
+};
 
 /**
  * @returns New promise on all promises fulfillment. Resulting promise will be fulfilled with an array of promises result values as soon as all promises will be fulfilled or will be rejected with the error of the first rejected promise.
  * @param promises Array of promises to wait for.
  */
-Q.all = function (promises) {
+Promise.all = function (promises) {
 
-    return Q(function (resolve, reject) {
+    return Promise.exec(function (resolve, reject) {
 
         // List of result values of each promises
         // Values are in same order as promises list
@@ -170,6 +149,6 @@ Q.all = function (promises) {
     });
 };
 
-window.Q = Q;
+global.Promise = Promise;
 
 })(this);
