@@ -115,6 +115,8 @@ function Promise (_executor) {
     }
 }
 
+// STATIC METHODS
+
 Promise.exec = function (executor) {
 
     return new Promise(executor).execute();
@@ -146,6 +148,14 @@ Promise.all = function (promises) {
 
             }, reject);
         })(i);
+    });
+};
+
+Promise.race = function (promises) {
+
+    return Promise.exec(function (resolve, reject) {
+        for (var i = 0; i < promises.length; i++)
+            promises[i].then(resolve, reject);
     });
 };
 
