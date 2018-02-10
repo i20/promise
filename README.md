@@ -1,4 +1,13 @@
-[TOC]
+1. [About](#about)
+2. [Use it](#use-it)
+    1. [Load the library](#load-the-library)
+    2. [Create a promise](#create-a-promise)
+    3. [Wait for a promise to be resolved/rejected](#wait-for-a-promise-to-be-resolvedrejected)
+    4. [Chain promises](#chain-promises)
+    5. [Follow a promise progress](#follow-a-promise-progress)
+3. [Reference](#reference)
+    1. [Combinations](#combinations)
+4. [In the pipe](#in-the-pipe)
 
 # About
 
