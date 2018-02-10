@@ -24,7 +24,7 @@ var myPromise = Promise.exec(function (resolve, reject, notify) {
 
 The example code above will simply create a promise that will be resolved at least 1000 ms in the future with the value `'Hello world !'`.
 
-Upon wrapped code execution, the *executor function* will be injected 3 callbacks that you can use to **resolve**/**reject** the created promise or just **notify** watchers of its progress. Each of these callbacks accepts one argument that will be in turn passed to callbacks attached via `Promise#then`, see the [*Wait for a promise to be resolved/rejected*](#wait-for-a-promise-to-be-resolved/rejected) section.
+Upon wrapped code execution, the *executor function* will be injected 3 callbacks that you can use to **resolve**/**reject** the created promise or just **notify** watchers of its progress. Each of these callbacks accepts one argument that will be in turn passed to callbacks attached via `Promise#then`, see the [*Wait for a promise to be resolved/rejected*](#wait-for-a-promise-to-be-resolvedrejected) section.
 
 NB : Note that as a promise can be whether resolved *or* rejected only once, multiple calls to `resolve`/`reject` won't have any effect, the first to be called will determine the promise final state. On the other hand `notify` can be called as much as you want, see the [*Follow a promise progress*](#follow-a-promise-progress) section.
 
