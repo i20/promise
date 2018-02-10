@@ -1,10 +1,12 @@
+[TOC]
+
 # About
 
 **Promise.js** is a simple and lighweight JS promise library I made after discovering *Angular's $q* and [*Kris Kowal's Q*](https://github.com/kriskowal/q). 
 
 JS promises just make the code more elegant by avoiding the *pyramid of doom* of too many nested callbacks when using asynchronous calls.
 
-As you know, promises are **now native** in most up-to-date JS engines via the constructor `Promise`. My library has no pretention to be better than native code and you should always prefer native implementation if concerned about code general quality. But if you're always eager to understand what happens under the hood like me feel free to use/fork/improve **Promise.js**, I will be happy to hear any constructive suggestion! :simple_smile:
+As you know, promises are **now native** in most up-to-date JS engines via the constructor `Promise`. My library has no pretention to be better than native code and you should always prefer native implementation if concerned about code general quality. But if you're always eager to understand what happens under the hood like me feel free to use/fork/improve **Promise.js**, I will be happy to hear any constructive suggestion! :neckbeard:
 
 # Use it
 
