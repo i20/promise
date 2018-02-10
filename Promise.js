@@ -159,6 +159,13 @@ Promise.race = function (promises) {
     });
 };
 
+Promise.noConflict = function () {
+
+    global.Promise = Promise.conflicted;
+    return Promise;
+};
+
+Promise.conflicted = global.Promise;
 global.Promise = Promise;
 
 })(this);
