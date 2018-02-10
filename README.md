@@ -37,7 +37,9 @@ The example code above will simply create a promise that will be resolved at lea
 
 Upon wrapped code execution, the *executor function* will be injected 3 callbacks that you can use to **resolve**/**reject** the created promise or just **notify** watchers of its progress. Each of these callbacks accepts one argument that will be in turn passed to callbacks attached via `Promise#then`, see the [*Wait for a promise to be resolved/rejected*](#wait-for-a-promise-to-be-resolvedrejected) section.
 
-NB : Note that as a promise can be whether resolved *or* rejected only once, multiple calls to `resolve`/`reject` won't have any effect, the first to be called will determine the promise final state. On the other hand `notify` can be called as much as you want, see the [*Follow a promise progress*](#follow-a-promise-progress) section.
+NB1 : Note that as a promise can be whether resolved *or* rejected only once, multiple calls to `resolve`/`reject` won't have any effect, the first to be called will determine the promise final state. On the other hand `notify` can be called as much as you want, see the [*Follow a promise progress*](#follow-a-promise-progress) section.
+
+NB2 : Throwing something in the *executor function* will have the same effect as calling `reject` and passing it the thrown value as parameter.
 
 ---
 
@@ -281,5 +283,4 @@ NB : Note that eventual notifications from combined promises `p1` and `p2` will 
 # In the pipe
 
 - Implement a `finally` callback.
-- Enable rejecting a promise by throwing an error from its executor function (currently only `reject` is supported in executor).
 - Make unhandled rejections throw an exception.

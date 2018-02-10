@@ -1,4 +1,3 @@
-// TODO implement finally
 (function (global, undefined) {
 
 function convert (callback, param) {
@@ -51,12 +50,19 @@ function Promise (_executor) {
         if (_state !== 0) return;
 
         _state = 1;
-        _executor( _solver(2), _solver(3), function (notification) {
 
-            // TODO Does it need to be run in next event turn?
-            for (var i = 0; i < _watchers.length; i++)
-                _watchers[i](notification);
-        });
+        try {
+            _executor( _solver(2), _solver(3), function (notification) {
+
+                // TODO Does it need to be run in next event turn?
+                for (var i = 0; i < _watchers.length; i++)
+                    _watchers[i](notification);
+            });
+        }
+        // Handle throw in executor as a reject call
+        catch (error) {
+            _solver(3)(error);
+        }
 
         return self;
     };
