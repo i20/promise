@@ -5,9 +5,10 @@
     3. [Wait for a promise to be resolved/rejected](#wait-for-a-promise-to-be-resolvedrejected)
     4. [Chain promises](#chain-promises)
     5. [Follow a promise progress](#follow-a-promise-progress)
-3. [Reference](#reference)
+3. [API Reference](#api-reference)
     1. [Combinations](#combinations)
 4. [In the pipe](#in-the-pipe)
+5. [References](#references)
 
 # About
 
@@ -198,7 +199,7 @@ var p = Promise.exec(function (resolve, reject, notify) {
 // Upload successful !
 ```
 
-# Reference
+# API Reference
 
 `Promise.exec(function (resolve, reject, notify) { ... })` takes an **executor function** and returns a new promise that is instantly executed, see the [*Create a promise*](#create-a-promise) section.
 
@@ -284,3 +285,8 @@ NB : Note that eventual notifications from combined promises `p1` and `p2` will 
 
 - Implement a `finally` callback.
 - Make unhandled rejections throw an exception.
+
+# References
+
+- [https://promisesaplus.com/]()
+- [https://github.com/kriskowal/q]()
