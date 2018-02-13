@@ -290,3 +290,9 @@ NB : Note that eventual notifications from combined promises `p1` and `p2` will 
 
 - [https://promisesaplus.com/]()
 - [https://github.com/kriskowal/q]()
+- [https://blog.carbonfive.com/2013/10/27/the-javascript-event-loop-explained/]()
+- [https://developer.mozilla.org/fr/docs/Web/JavaScript/Concurrence_et_boucle_des_%C3%A9v%C3%A9nements]()
+- [https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/]()
+- [http://voidcanvas.com/setimmediate-vs-nexttick-vs-settimeout/]()
+- [https://nodejs.org/api/process.html#process_process_nexttick_callback_args]()
+- [https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick/]()
