@@ -1,5 +1,7 @@
 (function (global, undefined) {
 
+'use strict';
+
 function convert (callback, param) {
 
     var value;
@@ -33,8 +35,6 @@ function noopReject (error) {
 function Promise (_executor) {
 
     var self = this;
-
-    if (self === global) throw 'Keyword "new" required to create a Promise';
 
     var _state = 0; // 0 pending, 1 executing, 2 resolved, 3 rejected
     var _value;
