@@ -2,6 +2,11 @@
 
 'use strict';
 
+function nextTick (callback, param) {
+
+    setTimeout(callback, 0, param);
+}
+
 function convert (callback, param) {
 
     var value;
@@ -17,7 +22,7 @@ function convert (callback, param) {
         success = false;
     }
 
-    return value instanceof Promise ? value : Promise.exec(function (resolve, reject) {
+    return value instanceof Promise ? value : Promise.exec(function (resolve, reject, notify) {
         (success ? resolve : reject)(value);
     });
 }
@@ -54,9 +59,10 @@ function Promise (_executor) {
         try {
             _executor( _solver(2), _solver(3), function (notification) {
 
-                // TODO Does it need to be run in next event turn?
+                if (_state !== 1) return;
+
                 for (var i = 0; i < _watchers.length; i++)
-                    _watchers[i](notification);
+                    nextTick(_watchers[i], notification);
             });
         }
         // Handle throw in executor as a reject call
@@ -72,19 +78,18 @@ function Promise (_executor) {
         if (notify)
             _watchers.push(notify);
 
+        var promise = new Promise(function (nextResolve, nextReject, nextNotify) {
+            _spawn(resolve, reject).then(nextResolve, nextReject, nextNotify);
+        });
+
         // Promise is not solved yet
-        if (_state < 2) {
+        // Enqueue a child promise that will be executed when current finishes
+        if (_state < 2) _queue.push(promise);
 
-            var promise = new Promise(function (nextResolve, nextReject) {
-                _spawn(resolve, reject).then(nextResolve, nextReject);
-            });
-
-            // Enqueue a child promise that will be executed when current finishes
-            _queue.push(promise);
-            return promise;
-        }
         // Promise has already been solved at binding time
-        else return _spawn(resolve, reject);
+        else nextTick(promise.execute);
+
+        return promise;
     };
 
     self.getState = function () {
@@ -98,20 +103,14 @@ function Promise (_executor) {
 
         return function (value) {
 
-            // Run solver in next event loop to ensure execution order
-            // https://github.com/kriskowal/q#tutorial
-            // https://blog.carbonfive.com/2013/10/27/the-javascript-event-loop-explained/
-            setTimeout(function () {
+            // Prevent multiple calls to resolve and reject inside executor, a promise is solved only once
+            if (_state !== 1) return;
 
-                // Prevent multiple calls to resolve and reject inside executor, a promise is solved only once
-                if (_state !== 1) return;
+            _state = nextState;
+            _value = value;
 
-                _state = nextState;
-                _value = value;
-
-                while ( _queue.length )
-                    _queue.shift().execute();
-            }, 0);
+            while ( _queue.length )
+                nextTick(_queue.shift().execute);
         };
     }
 
@@ -134,7 +133,7 @@ Promise.exec = function (executor) {
  */
 Promise.all = function (promises) {
 
-    return Promise.exec(function (resolve, reject) {
+    return Promise.exec(function (resolve, reject, notify) {
 
         // List of result values of each promises
         // Values are in same order as promises list
@@ -152,16 +151,16 @@ Promise.all = function (promises) {
                 // Only first call to solve callback will do something
                 resolve(values);
 
-            }, reject);
+            }, reject, notify);
         })(i);
     });
 };
 
 Promise.race = function (promises) {
 
-    return Promise.exec(function (resolve, reject) {
+    return Promise.exec(function (resolve, reject, notify) {
         for (var i = 0; i < promises.length; i++)
-            promises[i].then(resolve, reject);
+            promises[i].then(resolve, reject, notify);
     });
 };
 
