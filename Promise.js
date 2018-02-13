@@ -2,10 +2,10 @@
 
 'use strict';
 
-function nextTick (callback, param) {
+var nextTick = (global.process && global.process.nextTick) || function (callback, param) {
 
     setTimeout(callback, 0, param);
-}
+};
 
 function convert (callback, param) {
 
