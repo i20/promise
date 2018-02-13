@@ -2,8 +2,10 @@
 
 'use strict';
 
+// Prefer Node.js method if defined
 var nextTick = (global.process && global.process.nextTick) || function (callback, param) {
 
+    // Cheap fallback nextTick method to run a code asynchronously
     setTimeout(callback, 0, param);
 };
 
@@ -59,6 +61,8 @@ function Promise (_executor) {
         try {
             _executor( _solver(2), _solver(3), function (notification) {
 
+                // Stop notifications as soon as promise is solved
+                // Useful when being notified by raced promises via Promise.race
                 if (_state !== 1) return;
 
                 for (var i = 0; i < _watchers.length; i++)
@@ -110,7 +114,7 @@ function Promise (_executor) {
             _value = value;
 
             while ( _queue.length )
-                nextTick(_queue.shift().execute);
+                nextTick( _queue.shift().execute );
         };
     }
 
@@ -127,10 +131,6 @@ Promise.exec = function (executor) {
     return new Promise(executor).execute();
 };
 
-/**
- * @returns New promise on all promises fulfillment. Resulting promise will be fulfilled with an array of promises result values as soon as all promises will be fulfilled or will be rejected with the error of the first rejected promise.
- * @param promises Array of promises to wait for.
- */
 Promise.all = function (promises) {
 
     return Promise.exec(function (resolve, reject, notify) {
@@ -151,7 +151,7 @@ Promise.all = function (promises) {
                 // Only first call to solve callback will do something
                 resolve(values);
 
-            }, reject, notify);
+            }, reject, notify); // Same remark as Promise.race for the notify callback
         })(i);
     });
 };
@@ -160,6 +160,8 @@ Promise.race = function (promises) {
 
     return Promise.exec(function (resolve, reject, notify) {
         for (var i = 0; i < promises.length; i++)
+            // Pass notify callback to allow raced promised to notify
+            // Is it a good idea? I don't know but if you don't like it then don't use it!
             promises[i].then(resolve, reject, notify);
     });
 };
