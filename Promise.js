@@ -2,12 +2,50 @@
 
 'use strict';
 
-// Prefer Node.js method if defined
-var nextTick = (global.process && global.process.nextTick) || function (callback, param) {
+var nextTick =
+// Prefer Node.js method if defined since it creates microtasks
+(global.process && global.process.nextTick) ||
+// Otherwise try using window messaging that is still pretty fast
+(global.postMessage ? (function () {
 
-    // Cheap fallback nextTick method to run a code asynchronously
+    var messageType = 'i20-promise-job';
+    var pool = [];
+    var i = -1;
+
+    global.addEventListener('message', function (event) {
+
+        if (event.source === global && event.data.type === messageType) {
+
+            var job = pool[event.data.i];
+
+            if (job) {
+                event.stopPropagation();
+                delete pool[event.data.i];
+                job.callback(job.param);
+            }
+        }
+
+    }, true);
+
+    return function (callback, param) {
+
+        pool[++i] = {
+            callback: callback,
+            param: param
+        };
+
+        global.postMessage({
+            type: messageType,
+            i: i
+        }, '*');
+    };
+
+})() :
+// Cheap fallback to a macrotask
+function (callback, param) {
+
     setTimeout(callback, 0, param);
-};
+});
 
 function convert (callback, param) {
 
