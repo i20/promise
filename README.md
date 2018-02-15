@@ -164,7 +164,25 @@ Promise.exec(function (resolve, reject, notify) {
 // Will console.log('An error has happened', 'Timer failed')
 ```
 
-Now imagine replacing all these `setTimeout` calls by some AJAX ones !
+Now imagine replacing all these `setTimeout` calls by some AJAX ones ! If you're an adept of *jQuery's* `$.ajax` you can for example :
+
+```javascript
+Promise.exec(function (resolve, reject, notify) {
+    $.ajax({
+        url: 'www.example.com',
+        success: function (data, textStatus, jqXHR) {
+            resolve(data);
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            reject(errorThrown);
+        }
+    });
+}).then(function (data) {
+    // Do something with data received
+}, function (error) {
+    console.log('AJAX call failed :', error);
+});
+```
 
 ## Follow a promise progress
 
