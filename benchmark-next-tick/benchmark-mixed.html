@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="text/javascript" src="next-tick.js"></script>
+        <script type="text/javascript">
+
+        function runtest (type) {
+
+            var nextTick =
+                type === 'PM' ? nextTickPM :
+                type === 'PR' ? nextTickPR : nextTickTO;
+
+            var output = document.getElementById('output');
+            var outputText = document.createTextNode('');
+            output.appendChild(outputText);
+
+            function printOutput (line) {
+                outputText.data += line + "\n";
+            }
+
+            function test () {
+
+                if (++i === n) printOutput(n + ' iterations of nextTick' + type + ' took ' + (Date.now() - start) + ' milliseconds.');
+
+                else nextTick(test);
+            }
+
+            var n = 2000;
+            var i = 0;
+            var start = Date.now();
+
+            nextTick(test);
+        }
+
+        // Results : PR < PM << TO
+        // PM ~ 190
+        // PR inconstant 80 -> 220
+        // TO ~ 10000
+
+        // This is a more realistic case than benchmark-mine.html it has been adapted from benchmark-original.html
+
+        </script>
+    </head>
+    <body onload="runtest('PM')">
+        <pre id="output"></pre>
+    </body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="text/javascript" src="next-tick.js"></script>
+        <script type="text/javascript">
+
+        function noop () {}
+
+        function runtest (type) {
+
+            var nextTick =
+                type === 'PM' ? nextTickPM :
+                type === 'PR' ? nextTickPR : nextTickTO;
+
+            var output = document.getElementById('output');
+            var outputText = document.createTextNode('');
+            output.appendChild(outputText);
+
+            function printOutput (line) {
+                outputText.data += line + "\n";
+            }
+
+            var n = 2000;
+            var start = Date.now();
+
+            for (var i = 0; i < n; i++)
+                nextTick(noop);
+
+            nextTick(function () {
+                printOutput(n + ' iterations of nextTick' + type + ' took ' + (Date.now() - start) + ' milliseconds.');
+            });
+        }
+
+        // Results : TO < PR < PM
+        // PM ~ 170
+        // PR inconstant 80 -> 220
+        // TO 80 - 120
+
+        // Seems there are some optimisations that make setTimeout very fast in that case but this is not a trivial case
+        // See benchmark-mixed.html for real promise chaining case
+
+        </script>
+    </head>
+    <body onload="runtest('PM')">
+        <pre id="output"></pre>
+    </body>
+</html>

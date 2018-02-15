@@ -285,6 +285,7 @@ NB : Note that eventual notifications from combined promises `p1` and `p2` will 
 
 - Implement a `finally` callback.
 - Make unhandled rejections throw an exception.
+- Improve `nextTick` asynchronous scheduling (`Object.observe`, `MutationObserver`). 
 
 # References
 
@@ -296,3 +297,5 @@ NB : Note that eventual notifications from combined promises `p1` and `p2` will 
 - [http://voidcanvas.com/setimmediate-vs-nexttick-vs-settimeout/]()
 - [https://nodejs.org/api/process.html#process_process_nexttick_callback_args]()
 - [https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick/]()
+- [http://stackoverflow.com/q/18826570/1768303]()
+- [https://stackoverflow.com/questions/25915634/difference-between-microtask-and-macrotask-within-an-event-loop-context]()
