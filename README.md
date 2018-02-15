@@ -5,8 +5,8 @@
     3. [Wait for a promise to be resolved/rejected](#wait-for-a-promise-to-be-resolvedrejected)
     4. [Chain promises](#chain-promises)
     5. [Follow a promise progress](#follow-a-promise-progress)
+    6. [Combine promises](#combine-promises)
 3. [API Reference](#api-reference)
-    1. [Combinations](#combinations)
 4. [In the pipe](#in-the-pipe)
 5. [References](#references)
 
@@ -99,6 +99,8 @@ myPromise.then(function (value) {
     console.log('Failed with :', error);
 });
 ```
+
+:warning: Callbacks attached via `Promise#then` will always be run asynchronously. Asynchronous execution of handlers guarantees you that `Promise#then` will always return before the handler is called (even if it has been attached on an already solved promise). **Promise.js** tries to use the fastest asynchronous scheduling method, prefering microtasks over macrotasks when available. If you don't know much about these I encourage you to have a look at this [amazing post](https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/).
 
 ## Chain promises
 
@@ -199,6 +201,46 @@ var p = Promise.exec(function (resolve, reject, notify) {
 // Upload successful !
 ```
 
+## Combine promises
+
+If running multiple promises in parallel, you can combine them to wait for the whole with `Promise.all` :
+
+```javascript
+var p1 = Promise.exec(function (resolve, reject, notify) {
+    setTimeout(resolve, 2000, 'p1');
+});
+
+var p2 = Promise.exec(function (resolve, reject, notify) {
+    setTimeout(resolve, 1000, 'p2');
+});
+
+Promise.all([p1, p2]).then(function (values) {
+    console.log(values);
+});
+
+// Will console.log(['p1', 'p2']) at least 2000 ms after
+```
+
+Or race them to find the first to solve with `Promise.race` :
+
+```javascript
+var p1 = Promise.exec(function (resolve, reject, notify) {
+    setTimeout(resolve, 2000, 'p1');
+});
+
+var p2 = Promise.exec(function (resolve, reject, notify) {
+    setTimeout(resolve, 1000, 'p2');
+});
+
+Promise.race([p1, p2]).then(function (value) {
+    console.log(value);
+});
+
+// Will console.log('p2') at least 1000 ms after
+```
+
+NB : Note that eventual notifications from combined promises `p1` and `p2` will be passed in the order they happen to the resulting promise watchers, see the [*Follow a promise progress*](#follow-a-promise-progress) section. Notifications from late promises won't no more be catched as soon as a resolution state will be determined.
+
 # API Reference
 
 `Promise.exec(function (resolve, reject, notify) { ... })` takes an **executor function** and returns a new promise that is instantly executed, see the [*Create a promise*](#create-a-promise) section.
@@ -224,6 +266,17 @@ The new promise returned will be resolved with the return value of the `resolveC
 
 ---
 
+`Promise.all([promises])` takes an array of promises and returns a new one that will be whether :
+
+- **resolved** with an array of promises resolution values as soon as they **all will be resolved**. Resolution values are in the same order as passed in promises.
+- **rejected** with the rejection value of the **first rejected promise**.
+
+---
+
+`Promise.race([promises])` takes an array of promises and returns a new one that will be **resolved**/**rejected** the same way the **first finishing** passed in promise will be.
+
+---
+
 `Promise.noConflict()` can be called to avoid naming conflicts with others promise libraries (or native `Promise` object). It returns the `Promise` object from this library and restores the original global one.
 
 ```javascript
@@ -233,53 +286,6 @@ var PromiseJS = Promise.noConflict();
 // Promise = lib1 Promise
 // PromiseJS = Promise.js Promise
 ```
-
-## Combinations
-
-`Promise.all([promises])` takes an array of promises and returns a new one that will be whether :
-
-- **resolved** with an array of promises resolution values as soon as they **all will be resolved**. Resolution values are in the same order as passed in promises.
-- **rejected** with the rejection value of the **first rejected promise**.
-
-```javascript
-var p1 = Promise.exec(function (resolve, reject, notify) {
-    setTimeout(resolve, 2000, 'p1');
-});
-
-var p2 = Promise.exec(function (resolve, reject, notify) {
-    setTimeout(resolve, 1000, 'p2');
-});
-
-Promise.all([p1, p2]).then(function (values) {
-    console.log(values);
-});
-
-// Will console.log(['p1', 'p2']) at least 2000 ms after
-```
-
-NB : Note that eventual notifications from combined promises `p1` and `p2` will not reach the resulting promise watchers.
-
----
-
-`Promise.race([promises])` takes an array of promises and returns a new one that will be **resolved**/**rejected** the same way the **first finishing** passed in promise will be.
-
-```javascript
-var p1 = Promise.exec(function (resolve, reject, notify) {
-    setTimeout(resolve, 2000, 'p1');
-});
-
-var p2 = Promise.exec(function (resolve, reject, notify) {
-    setTimeout(resolve, 1000, 'p2');
-});
-
-Promise.race([p1, p2]).then(function (value) {
-    console.log(value);
-});
-
-// Will console.log('p2') at least 1000 ms after
-```
-
-NB : Note that eventual notifications from combined promises `p1` and `p2` will not reach the resulting promise watchers.
 
 # In the pipe
 
