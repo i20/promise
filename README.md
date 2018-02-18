@@ -267,10 +267,10 @@ NB : Note that eventual notifications from combined promises `p1` and `p2` will 
 
 `Promise#getState()` returns the promise state :
 
-- `0` = *pending*, promise has been created but code execution has not been triggered
-- `1` = *executing*, promise execution has started but is always running
-- `2` = *resolved*
-- `3` = *rejected*
+- `Promise.STATE_PENDING` = promise has been created but code execution has not been triggered
+- `Promise.STATE_RUNNING` = promise execution has started but is always running
+- `Promise.STATE_RESOLVED` = promise has been resolved (terminal state)
+- `Promise.STATE_REJECTED` = promise has been rejected (terminal state)
 
 ---
 

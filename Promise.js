@@ -81,7 +81,7 @@ function Promise (_executor) {
 
     var self = this;
 
-    var _state = 0; // 0 pending, 1 executing, 2 resolved, 3 rejected
+    var _state = Promise.STATE_PENDING;
     var _value;
     var _queue = [];
     var _watchers = [];
@@ -92,16 +92,16 @@ function Promise (_executor) {
     self.execute = function () {
 
         // Prevent re-executing a promise
-        if (_state !== 0) return;
+        if (_state !== Promise.STATE_PENDING) return;
 
-        _state = 1;
+        _state = Promise.STATE_RUNNING;
 
         try {
-            _executor( _solver(2), _solver(3), function (notification) {
+            _executor( _solver(Promise.STATE_RESOLVED), _solver(Promise.STATE_REJECTED), function (notification) {
 
                 // Stop notifications as soon as promise is solved
                 // Useful when being notified by raced promises via Promise.race
-                if (_state !== 1) return;
+                if (_state !== Promise.STATE_RUNNING) return;
 
                 for (var i = 0; i < _watchers.length; i++)
                     nextTick(_watchers[i], notification);
@@ -109,7 +109,7 @@ function Promise (_executor) {
         }
         // Handle throw in executor as a reject call
         catch (error) {
-            _solver(3)(error);
+            _solver(Promise.STATE_REJECTED)(error);
         }
 
         return self;
@@ -126,7 +126,7 @@ function Promise (_executor) {
 
         // Promise is not solved yet
         // Enqueue a child promise that will be executed when current finishes
-        if (_state < 2) _queue.push(promise);
+        if (_state < Promise.STATE_RESOLVED) _queue.push(promise);
 
         // Promise has already been solved at binding time
         else nextTick(promise.execute);
@@ -146,7 +146,7 @@ function Promise (_executor) {
         return function (value) {
 
             // Prevent multiple calls to resolve and reject inside executor, a promise is solved only once
-            if (_state !== 1) return;
+            if (_state !== Promise.STATE_RUNNING) return;
 
             _state = nextState;
             _value = value;
@@ -158,11 +158,16 @@ function Promise (_executor) {
 
     function _spawn (resolve, reject) {
 
-        return convert( (_state === 2 ? resolve || noopResolve : reject || noopReject), _value);
+        return convert( (_state === Promise.STATE_RESOLVED ? resolve || noopResolve : reject || noopReject), _value);
     }
 }
 
-// STATIC METHODS
+// STATIC METHODS AND CONSTANTS
+
+Promise.STATE_PENDING = 0;
+Promise.STATE_RUNNING = 1;
+Promise.STATE_RESOLVED = 2;
+Promise.STATE_REJECTED = 3;
 
 Promise.exec = function (executor) {
 
@@ -183,7 +188,7 @@ Promise.all = function (promises) {
                 values[i] = value;
 
                 for (var j = 0; j < promises.length; j++)
-                    if (promises[j].getState() !== 2)
+                    if (promises[j].getState() !== Promise.STATE_RESOLVED)
                         return;
 
                 // Only first call to solve callback will do something
