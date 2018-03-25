@@ -43,8 +43,7 @@ var nextTick =
 })() :
 // Cheap fallback to a macrotask
 function (callback, param) {
-
-    setTimeout(callback, 0, param);
+    global.setTimeout(callback, 0, param);
 });
 
 function convert (callback, param) {
@@ -68,12 +67,10 @@ function convert (callback, param) {
 }
 
 function noopResolve (value) {
-
     return value;
 }
 
 function noopReject (error) {
-
     throw error;
 }
 
@@ -135,7 +132,6 @@ function Promise (_executor) {
     };
 
     self.getState = function () {
-
         return _state;
     };
 
@@ -157,7 +153,6 @@ function Promise (_executor) {
     }
 
     function _spawn (resolve, reject) {
-
         return convert( (_state === Promise.STATE_RESOLVED ? resolve || noopResolve : reject || noopReject), _value);
     }
 }
@@ -170,7 +165,6 @@ Promise.STATE_RESOLVED = 2;
 Promise.STATE_REJECTED = 3;
 
 Promise.exec = function (executor) {
-
     return new Promise(executor).execute();
 };
 
@@ -210,7 +204,6 @@ Promise.race = function (promises) {
 };
 
 Promise.noConflict = function () {
-
     global.Promise = Promise.conflicted;
     return Promise;
 };
