@@ -2,11 +2,9 @@
 
 'use strict';
 
-var nextTick =
-// Prefer Node.js method if defined since it creates microtasks
-(global.process && global.process.nextTick) ||
-// Otherwise try using window messaging that is still pretty fast
-(global.postMessage ? (function () {
+var nextTick = global.process && global.process.nextTick ? function (callback, param) { // Prefer Node.js method if defined since it creates microtasks
+    global.process.nextTick(callback, param);
+} : global.postMessage ? (function () { // Otherwise try using window messaging that is still pretty fast
 
     var messageType = 'i20-promise-job';
     var pool = [];
@@ -40,11 +38,9 @@ var nextTick =
         }, '*');
     };
 
-})() :
-// Cheap fallback to a macrotask
-function (callback, param) {
+})() : function (callback, param) { // Cheap fallback to a macrotask
     global.setTimeout(callback, 0, param);
-});
+};
 
 function convert (callback, param) {
 
@@ -126,7 +122,9 @@ function Promise (_executor) {
         if (_state < Promise.STATE_RESOLVED) _queue.push(promise);
 
         // Promise has already been solved at binding time
-        else nextTick(promise.execute);
+        else nextTick(function () {
+            promise.execute();
+        });
 
         return promise;
     };
@@ -148,7 +146,9 @@ function Promise (_executor) {
             _value = value;
 
             while ( _queue.length )
-                nextTick( _queue.shift().execute );
+                nextTick(function () {
+                    _queue.shift().execute();
+                });
         };
     }
 
