@@ -42,26 +42,6 @@ var nextTick = global.process && global.process.nextTick ? function (callback, p
     global.setTimeout(callback, 0, param);
 };
 
-function convert (callback, param) {
-
-    var value;
-    var success;
-
-    try {
-        value = callback(param);
-        success = true;
-    }
-
-    catch (error) {
-        value = error;
-        success = false;
-    }
-
-    return value instanceof Promise ? value : Promise.exec(function (resolve, reject, notify) {
-        (success ? resolve : reject)(value);
-    });
-}
-
 function noopResolve (value) {
     return value;
 }
@@ -114,7 +94,24 @@ function Promise (_executor) {
             _watchers.push(notify);
 
         var promise = new Promise(function (nextResolve, nextReject, nextNotify) {
-            _spawn(resolve, reject).then(nextResolve, nextReject, nextNotify);
+
+            var result;
+            var success;
+
+            try {
+                result = (_state === Promise.STATE_RESOLVED ? resolve || noopResolve : reject || noopReject)(_value);
+                success = true;
+            }
+
+            catch (error) {
+                result = error;
+                success = false;
+            }
+
+            if (result instanceof Promise)
+                result.then(nextResolve, nextReject, nextNotify);
+
+            else (success ? nextResolve : nextReject)(result);
         });
 
         // Promise is not solved yet
@@ -145,15 +142,12 @@ function Promise (_executor) {
             _state = nextState;
             _value = value;
 
-            while ( _queue.length )
-                nextTick(function () {
-                    _queue.shift().execute();
-                });
+            while ( _queue.length ) {
+                nextTick(function (next) {
+                    next.execute();
+                }, _queue.shift());
+            }
         };
-    }
-
-    function _spawn (resolve, reject) {
-        return convert( (_state === Promise.STATE_RESOLVED ? resolve || noopResolve : reject || noopReject), _value);
     }
 }
 
