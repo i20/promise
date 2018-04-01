@@ -7,12 +7,13 @@
     5. [Follow a promise progress](#follow-a-promise-progress)
     6. [Combine promises](#combine-promises)
 3. [API Reference](#api-reference)
-4. [In the pipe](#in-the-pipe)
-5. [References](#references)
+4. [Tests](#tests)
+5. [In the pipe](#in-the-pipe)
+6. [References](#references)
 
 # About
 
-**Promise.js** is a simple and lighweight JS promise library I made after discovering *Angular's $q* and [*Kris Kowal's Q*](https://github.com/kriskowal/q). 
+**Promise.js** is a simple and lightweight JS promise library I made after discovering *Angular's $q* and [*Kris Kowal's Q*](https://github.com/kriskowal/q). 
 
 JS promises just make the code more elegant by avoiding the *pyramid of doom* of too many nested callbacks when using asynchronous calls.
 
@@ -304,6 +305,10 @@ var PromiseJS = Promise.noConflict();
 // Promise = lib1 Promise
 // PromiseJS = Promise.js Promise
 ```
+
+# Tests
+
+As any correct library, **Promise.js** comes with its unit tests. You can find them under the *"tests"* folder of this repository. They are written with [*QUnit*](https://qunitjs.com/) and you can launch them either via your browser with the provided *"tests.html"* or via the CLI (see previous link for more information).
 
 # In the pipe
 
