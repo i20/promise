@@ -13,17 +13,20 @@
 
 # About
 
-**Promise.js** is a simple and lightweight JS promise library I made after discovering *Angular's $q* and [*Kris Kowal's Q*](https://github.com/kriskowal/q). 
+**Promise.js** is a simple and lightweight JS promise library inspired by *Angular's $q* and [*Kris Kowal's Q*](https://github.com/kriskowal/q).
 
 JS promises just make the code more elegant by avoiding the *pyramid of doom* of too many nested callbacks when using asynchronous calls.
 
-As you know, promises are **now native** in most up-to-date JS engines via the constructor `Promise`. My library has no pretention to be better than native code and you should always prefer native implementation if concerned about code general quality. But if you're always eager to understand what happens under the hood like me feel free to use/fork/improve **Promise.js**, I will be happy to hear any constructive suggestion! :neckbeard:
+Promises are **now native** in most up-to-date JS engines via the constructor `Promise` but some older browsers may not support them natively or behave with quirks and that is where **Promise.js** comes to the rescue. Feel free to use/fork/improve it, I will be happy to hear any constructive suggestion! :neckbeard:
 
 # Use it
 
 ## Load the library
 
-To start using **Promise.js** just include the file with a traditionnal `<script>` tag and you're good to go !
+**Promise.js** is exposed as a *NodeJS* module (preferred) or as a simple global depending on the context of execution. More precisely meaning that :
+
+- if you use it through *NodeJS* then it is exposed as a module and you just need to `var Promise = require('./Promise.js');`
+- otherwise if you included it via a traditionnal `<script>` tag then it is injected as the global `Promise` (see `Promise.noConflict()`)
 
 ## Create a promise
 
@@ -81,16 +84,16 @@ myPromise.then(function (value) {
 ```
 
 In the example above we attached a callback to the resolution of the promise but we can also listen for rejection :
- 
+
 ```javascript
 var myPromise = Promise.exec(function (resolve, reject, notify) {
     setTimeout(function () {
-    
-        Math.random() * 10 < 5 ? 
-            reject('Random < 5') : 
+
+        Math.random() * 10 < 5 ?
+            reject('Random < 5') :
             resolve('Random >= 5')
         ;
-    
+
     }, 1000);
 });
 
@@ -127,7 +130,7 @@ Promise.exec(function (resolve, reject, notify) {
 }).then(function (value) {
     throw 'I am not in the mood';
 }).then(function (value) {
-    console.log(value); 
+    console.log(value);
 }, function (error) {
     console.log('An error has happened', error);
 });
@@ -198,14 +201,14 @@ var p = Promise.exec(function (resolve, reject, notify) {
 
         i += 10;
         notify(i);
-        
+
         if (i === 100) {
             clearInterval(interval);
             resolve('Upload successful !');
         }
 
     }, 1000);
-    
+
 }).then(function (value) {
     console.log(value);
 }, null, function (notif) {
@@ -306,15 +309,17 @@ var PromiseJS = Promise.noConflict();
 // PromiseJS = Promise.js Promise
 ```
 
+:warning: `Promise.noConflict()` is only available if **Promise.js** has been exposed as a global, see the [*Load the library*](#load-the-library) section.
+
 # Tests
 
-As any correct library, **Promise.js** comes with its unit tests. You can find them under the *"tests"* folder of this repository. They are written with [*QUnit*](https://qunitjs.com/) and you can launch them either via your browser with the provided *"tests.html"* or via the CLI (see previous link for more information).
+**Promise.js** comes with its unit tests. You can find them under the *"tests"* folder of this repository. They are written with [*QUnit*](https://qunitjs.com/) and you can launch them either via your browser with the provided *"tests.html"* or via the CLI (see previous link for more information).
 
 # In the pipe
 
 - Implement a `finally` callback.
 - Make unhandled rejections throw an exception.
-- Improve `nextTick` asynchronous scheduling (`Object.observe`, `MutationObserver`). 
+- Improve `nextTick` asynchronous scheduling (`Object.observe`, `MutationObserver`).
 
 # References
 
@@ -328,3 +333,4 @@ As any correct library, **Promise.js** comes with its unit tests. You can find t
 - [https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick/]()
 - [http://stackoverflow.com/q/18826570/1768303]()
 - [https://stackoverflow.com/questions/25915634/difference-between-microtask-and-macrotask-within-an-event-loop-context]()
+- [https://www.sitepoint.com/javascript-modules-bundling-transpiling/]()

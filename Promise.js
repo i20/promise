@@ -1,9 +1,13 @@
-(function (global, undefined) {
+(function (undefined) {
 
 'use strict';
 
-var nextTick = global.process && global.process.nextTick ? function (callback, param) { // Prefer Node.js method if defined since it creates microtasks
-    global.process.nextTick(callback, param);
+var global = typeof window === 'object' ? window : // Basic browser context
+             typeof global === 'object' ? global : // NodeJS context
+             this; // Some unknown context
+
+var nextTick = typeof process === 'object' && process.nextTick ? function (callback, param) { // Prefer Node.js method if defined since it creates microtasks
+    process.nextTick(callback, param);
 } : global.postMessage ? (function () { // Otherwise try using window messaging that is still pretty fast
 
     var messageType = 'i20-promise-job';
@@ -108,6 +112,7 @@ function Promise (_executor) {
                 success = false;
             }
 
+            // If handler's result is a promise then, whether it was thrown or returned, it "replaces" the current promise
             if (result instanceof Promise)
                 result.then(nextResolve, nextReject, nextNotify);
 
@@ -197,12 +202,22 @@ Promise.race = function (promises) {
     });
 };
 
-Promise.noConflict = function () {
-    global.Promise = Promise.conflicted;
-    return Promise;
-};
+// EXPOSE LIBRARY TO THE OUTSIDE
 
-Promise.conflicted = global.Promise;
-global.Promise = Promise;
+// Node.js module format (preferred)
+if (typeof module === 'object' && typeof module.exports === 'object')
+    module.exports = Promise;
 
-})(this);
+// Old browser global exposition (with noConflict method)
+else {
+
+    Promise.noConflict = function () {
+        global.Promise = Promise.conflicted;
+        return Promise;
+    };
+
+    Promise.conflicted = global.Promise;
+    global.Promise = Promise;
+}
+
+})();
