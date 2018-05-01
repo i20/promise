@@ -2,21 +2,22 @@
 
 'use strict';
 
-var global = typeof window === 'object' ? window : // Basic browser context
-             typeof global === 'object' ? global : // NodeJS context
-             this; // Some unknown context
+// Do not reuse "global" to be min-safe when shrinking vars + it would be a bad practice
+var _global = typeof window === 'object' ? window : // Basic browser context
+              typeof global === 'object' ? global : // NodeJS context
+              this; // Some unknown context
 
 var nextTick = typeof process === 'object' && process.nextTick ? function (callback, param) { // Prefer Node.js method if defined since it creates microtasks
     process.nextTick(callback, param);
-} : global.postMessage ? (function () { // Otherwise try using window messaging that is still pretty fast
+} : _global.postMessage ? (function () { // Otherwise try using window messaging that is still pretty fast
 
     var messageType = 'i20-promise-job';
     var pool = [];
     var i = -1;
 
-    global.addEventListener('message', function (event) {
+    _global.addEventListener('message', function (event) {
 
-        if (event.source === global && event.data.type === messageType) {
+        if (event.source === _global && event.data.type === messageType) {
 
             var job = pool[event.data.i];
 
@@ -36,14 +37,14 @@ var nextTick = typeof process === 'object' && process.nextTick ? function (callb
             param: param
         };
 
-        global.postMessage({
+        _global.postMessage({
             type: messageType,
             i: i
         }, '*');
     };
 
 })() : function (callback, param) { // Cheap fallback to a macrotask
-    global.setTimeout(callback, 0, param);
+    _global.setTimeout(callback, 0, param);
 };
 
 // Avoid directly exposing states values, this way states values are always correct when checking internally even if exposed constants were modified from outside
@@ -218,12 +219,12 @@ if (typeof module === 'object' && typeof module.exports === 'object')
 else {
 
     Promise.noConflict = function () {
-        global.Promise = Promise.conflicted;
+        _global.Promise = Promise.conflicted;
         return Promise;
     };
 
-    Promise.conflicted = global.Promise;
-    global.Promise = Promise;
+    Promise.conflicted = _global.Promise;
+    _global.Promise = Promise;
 }
 
 })();
