@@ -46,6 +46,12 @@ var nextTick = typeof process === 'object' && process.nextTick ? function (callb
     global.setTimeout(callback, 0, param);
 };
 
+// Avoid directly exposing states values, this way states values are always correct when checking internally even if exposed constants were modified from outside
+var STATE_PENDING = 0;
+var STATE_RUNNING = 1;
+var STATE_RESOLVED = 2;
+var STATE_REJECTED = 3;
+
 function noopResolve (value) {
     return value;
 }
@@ -58,7 +64,7 @@ function Promise (_executor) {
 
     var self = this;
 
-    var _state = Promise.STATE_PENDING;
+    var _state = STATE_PENDING;
     var _value;
     var _queue = [];
     var _watchers = [];
@@ -69,16 +75,16 @@ function Promise (_executor) {
     self.execute = function () {
 
         // Prevent re-executing a promise
-        if (_state !== Promise.STATE_PENDING) return;
+        if (_state !== STATE_PENDING) return;
 
-        _state = Promise.STATE_RUNNING;
+        _state = STATE_RUNNING;
 
         try {
-            _executor( _solver(Promise.STATE_RESOLVED), _solver(Promise.STATE_REJECTED), function (notification) {
+            _executor( _solver(STATE_RESOLVED), _solver(STATE_REJECTED), function (notification) {
 
                 // Stop notifications as soon as promise is solved
                 // Useful when being notified by raced promises via Promise.race
-                if (_state !== Promise.STATE_RUNNING) return;
+                if (_state !== STATE_RUNNING) return;
 
                 for (var i = 0; i < _watchers.length; i++)
                     nextTick(_watchers[i], notification);
@@ -86,7 +92,7 @@ function Promise (_executor) {
         }
         // Handle throw in executor as a reject call
         catch (error) {
-            _solver(Promise.STATE_REJECTED)(error);
+            _solver(STATE_REJECTED)(error);
         }
 
         return self;
@@ -103,7 +109,7 @@ function Promise (_executor) {
             var success;
 
             try {
-                result = (_state === Promise.STATE_RESOLVED ? resolve || noopResolve : reject || noopReject)(_value);
+                result = (_state === STATE_RESOLVED ? resolve || noopResolve : reject || noopReject)(_value);
                 success = true;
             }
 
@@ -121,7 +127,7 @@ function Promise (_executor) {
 
         // Promise is not solved yet
         // Enqueue a child promise that will be executed when current finishes
-        if (_state < Promise.STATE_RESOLVED) _queue.push(promise);
+        if (_state < STATE_RESOLVED) _queue.push(promise);
 
         // Promise has already been solved at binding time
         else nextTick(function () {
@@ -142,7 +148,7 @@ function Promise (_executor) {
         return function (value) {
 
             // Prevent multiple calls to resolve and reject inside executor, a promise is solved only once
-            if (_state !== Promise.STATE_RUNNING) return;
+            if (_state !== STATE_RUNNING) return;
 
             _state = nextState;
             _value = value;
@@ -158,10 +164,10 @@ function Promise (_executor) {
 
 // STATIC METHODS AND CONSTANTS
 
-Promise.STATE_PENDING = 0;
-Promise.STATE_RUNNING = 1;
-Promise.STATE_RESOLVED = 2;
-Promise.STATE_REJECTED = 3;
+Promise.STATE_PENDING = STATE_PENDING;
+Promise.STATE_RUNNING = STATE_RUNNING;
+Promise.STATE_RESOLVED = STATE_RESOLVED;
+Promise.STATE_REJECTED = STATE_REJECTED;
 
 Promise.exec = function (executor) {
     return new Promise(executor).execute();
@@ -181,7 +187,7 @@ Promise.all = function (promises) {
                 values[i] = value;
 
                 for (var j = 0; j < promises.length; j++)
-                    if (promises[j].getState() !== Promise.STATE_RESOLVED)
+                    if (promises[j].getState() !== STATE_RESOLVED)
                         return;
 
                 // Only first call to solve callback will do something
