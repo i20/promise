@@ -33,7 +33,7 @@ Promises are **now native** in most up-to-date JS engines via the constructor `P
 You can create a promise from any asynchronous code by wrapping it in an **executor function** as follow :
 
 ```javascript
-var myPromise = Promise.exec(function (resolve, reject, notify) {
+var myPromise = Promise.run(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'Hello world !');
 });
 ```
@@ -48,7 +48,7 @@ NB2 : Throwing something in the *executor function* will have the same effect as
 
 ---
 
-Alternatively, you can create a new promise that will not be executed right away by using the constructor `new Promise(function (resolve, reject, notify) { ... })`. The `Promise` object created will be executed only once `Promise#execute()` will be called :
+Alternatively, you can create a new promise that will not be executed right away by using the constructor `new Promise(function (resolve, reject, notify) { ... })`. The `Promise` object created will be executed only once `Promise#run()` will be called :
 
 ```javascript
 var myPromise = new Promise(function (resolve, reject, notify) {
@@ -56,12 +56,12 @@ var myPromise = new Promise(function (resolve, reject, notify) {
 });
 
 setTimeout(function () {
-    myPromise.execute();
+    myPromise.run();
 }, 1000);
 
 // console.log will happen at least 2000 ms after
 ```
-In fact `Promise.exec(executor)` is a shorthand for `new Promise(executor).execute()`.
+In fact `Promise.run(executor)` is a shorthand for `new Promise(executor).run()`.
 
 ## Wait for a promise to be resolved/rejected
 
@@ -72,7 +72,7 @@ Every `Promise` object has a method `Promise#then` that allows you to attach cal
 - a **notification** callback, see the [*Follow a promise progress*](#follow-a-promise-progress) section.
 
 ```javascript
-var myPromise = Promise.exec(function (resolve, reject, notify) {
+var myPromise = Promise.run(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'Hello world !');
 });
 
@@ -86,7 +86,7 @@ myPromise.then(function (value) {
 In the example above we attached a callback to the resolution of the promise but we can also listen for rejection :
 
 ```javascript
-var myPromise = Promise.exec(function (resolve, reject, notify) {
+var myPromise = Promise.run(function (resolve, reject, notify) {
     setTimeout(function () {
 
         Math.random() * 10 < 5 ?
@@ -111,7 +111,7 @@ myPromise.then(function (value) {
 `Promise#then` returns a new promise and therefore allows you to chain calls :
 
 ```javascript
-Promise.exec(function (resolve, reject, notify) {
+Promise.run(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'P1');
 }).then(function (value) {
     return value.toLowerCase();
@@ -125,7 +125,7 @@ Promise.exec(function (resolve, reject, notify) {
 You can also reject any promise in the chain by throwing an error :
 
 ```javascript
-Promise.exec(function (resolve, reject, notify) {
+Promise.run(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'P1');
 }).then(function (value) {
     throw 'I am not in the mood';
@@ -141,10 +141,10 @@ Promise.exec(function (resolve, reject, notify) {
 You can also, and it's a very common case, return another promise :
 
 ```javascript
-Promise.exec(function (resolve, reject, notify) {
+Promise.run(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 2000);
 }).then(function (value) {
-    return Promise.exec(function (resolve, reject, notify) {
+    return Promise.run(function (resolve, reject, notify) {
         setTimeout(resolve, value, 'Timers done !');
     });
 }).then(function (value) {
@@ -157,7 +157,7 @@ Promise.exec(function (resolve, reject, notify) {
 When a promise is resolved but you didn't provided a `resolveCallback` to `Promise#then` *or* is rejected but no `rejectCallback` was provided, then the new promise returned keeps the parent promise state :
 
 ```javascript
-Promise.exec(function (resolve, reject, notify) {
+Promise.run(function (resolve, reject, notify) {
     setTimeout(reject, 1000, 'Timer failed');
 }).then(function (value) {
     console.log('Timer done !');
@@ -171,7 +171,7 @@ Promise.exec(function (resolve, reject, notify) {
 Now imagine replacing all these `setTimeout` calls by some AJAX ones ! If you're an adept of *jQuery's* `$.ajax` you can for example :
 
 ```javascript
-Promise.exec(function (resolve, reject, notify) {
+Promise.run(function (resolve, reject, notify) {
     $.ajax({
         url: 'www.example.com',
         success: function (data, textStatus, jqXHR) {
@@ -193,7 +193,7 @@ Promise.exec(function (resolve, reject, notify) {
 It can be useful for example in a case of file upload to be able to follow the upload promise progress to display a progress indicator to the end user, that's what the `notifyCallback` of `Promise#then` is done for !
 
 ```javascript
-var p = Promise.exec(function (resolve, reject, notify) {
+var p = Promise.run(function (resolve, reject, notify) {
 
     var i = 0;
 
@@ -228,11 +228,11 @@ var p = Promise.exec(function (resolve, reject, notify) {
 If running multiple promises in parallel, you can combine them to wait for the whole with `Promise.all` :
 
 ```javascript
-var p1 = Promise.exec(function (resolve, reject, notify) {
+var p1 = Promise.run(function (resolve, reject, notify) {
     setTimeout(resolve, 2000, 'p1');
 });
 
-var p2 = Promise.exec(function (resolve, reject, notify) {
+var p2 = Promise.run(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'p2');
 });
 
@@ -246,11 +246,11 @@ Promise.all([p1, p2]).then(function (values) {
 Or race them to find the first to solve with `Promise.race` :
 
 ```javascript
-var p1 = Promise.exec(function (resolve, reject, notify) {
+var p1 = Promise.run(function (resolve, reject, notify) {
     setTimeout(resolve, 2000, 'p1');
 });
 
-var p2 = Promise.exec(function (resolve, reject, notify) {
+var p2 = Promise.run(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'p2');
 });
 
@@ -265,7 +265,7 @@ NB : Note that eventual notifications from combined promises `p1` and `p2` will 
 
 # API Reference
 
-`Promise.exec(function (resolve, reject, notify) { ... })` takes an **executor function** and returns a new promise that is instantly executed, see the [*Create a promise*](#create-a-promise) section.
+`Promise.run(function (resolve, reject, notify) { ... })` takes an **executor function** and returns a new promise that is instantly executed, see the [*Create a promise*](#create-a-promise) section.
 
 ---
 
@@ -278,7 +278,7 @@ NB : Note that eventual notifications from combined promises `p1` and `p2` will 
 
 ---
 
-`Promise#execute()` triggers promise execution and returns it, see the [*Create a promise*](#create-a-promise) section.
+`Promise#run()` triggers promise execution and returns it, see the [*Create a promise*](#create-a-promise) section.
 
 ---
 
