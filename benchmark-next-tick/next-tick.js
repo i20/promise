@@ -4,7 +4,7 @@
 
     global.nextTickPM = (function () {
 
-        var messageType = 'i20-promise-job';
+        var messageType = 'promise-job';
         var pool = [];
         var i = -1;
 

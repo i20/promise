@@ -4,7 +4,7 @@ QUnit.module('Core behavior', function () {
 
         var done = assert.async();
 
-        Promise.exec(function (resolve, reject, notify) {
+        Promise.run(function (resolve, reject, notify) {
             setTimeout(resolve, 100, 'resolved');
         }).then(function (value) {
             assert.ok(true, 'Successfully resolved');
@@ -20,7 +20,7 @@ QUnit.module('Core behavior', function () {
 
         var done = assert.async();
 
-        Promise.exec(function (resolve, reject, notify) {
+        Promise.run(function (resolve, reject, notify) {
             setTimeout(reject, 100, 'rejected');
         }).then(function (value) {
             assert.ok(false, 'Successfully rejected');
@@ -36,7 +36,7 @@ QUnit.module('Core behavior', function () {
 
         var done = assert.async();
 
-        Promise.exec(function (resolve, reject, notify) {
+        Promise.run(function (resolve, reject, notify) {
             throw 'rejected';
         }).then(function (value) {
             assert.ok(false, 'Successfully rejected');
@@ -54,7 +54,7 @@ QUnit.module('Core behavior', function () {
         var now = Date.now();
         var delay = 100;
 
-        Promise.exec(function (resolve, reject, notify) {
+        Promise.run(function (resolve, reject, notify) {
             setTimeout(resolve, delay, 'resolved');
         }).then(function (value) {
             var then = Date.now();
@@ -71,7 +71,7 @@ QUnit.module('Core behavior', function () {
 
         assert.expect(goal);
 
-        Promise.exec(function (resolve, reject, notify) {
+        Promise.run(function (resolve, reject, notify) {
             var interval = setInterval(function () {
 
                 i++;
@@ -96,7 +96,7 @@ QUnit.module('Chaining', function () {
 
         var done = assert.async();
 
-        Promise.exec(function (resolve, reject, notify) {
+        Promise.run(function (resolve, reject, notify) {
             setTimeout(resolve, 100, 'resolved');
         }).then(function (value) {
             return value.toUpperCase();
@@ -110,7 +110,7 @@ QUnit.module('Chaining', function () {
 
         var done = assert.async();
 
-        Promise.exec(function (resolve, reject, notify) {
+        Promise.run(function (resolve, reject, notify) {
             setTimeout(reject, 100, 'rejected');
         }).then(null, function (error) {
             return error.toUpperCase();
@@ -124,7 +124,7 @@ QUnit.module('Chaining', function () {
 
         var done = assert.async();
 
-        Promise.exec(function (resolve, reject, notify) {
+        Promise.run(function (resolve, reject, notify) {
             setTimeout(resolve, 100, 'resolved');
         }).then(function (value) {
             throw value.toUpperCase();
@@ -138,7 +138,7 @@ QUnit.module('Chaining', function () {
 
         var done = assert.async();
 
-        Promise.exec(function (resolve, reject, notify) {
+        Promise.run(function (resolve, reject, notify) {
             setTimeout(reject, 100, 'rejected');
         }).then(null, function (error) {
             throw error.toUpperCase();
@@ -152,10 +152,10 @@ QUnit.module('Chaining', function () {
 
         var done = assert.async();
 
-        Promise.exec(function (resolve, reject, notify) {
+        Promise.run(function (resolve, reject, notify) {
             setTimeout(resolve, 100, 'resolved');
         }).then(function (value) {
-            return Promise.exec(function (resolve, reject, notify) {
+            return Promise.run(function (resolve, reject, notify) {
                 setTimeout(resolve, 100, value.toUpperCase());
             });
         }).then(function (value) {
@@ -173,11 +173,11 @@ QUnit.module('Combination', function () {
 
             var done = assert.async();
 
-            var p1 = Promise.exec(function (resolve, reject, notify) {
+            var p1 = Promise.run(function (resolve, reject, notify) {
                 setTimeout(resolve, 200, 'resolved1');
             });
 
-            var p2 = Promise.exec(function (resolve, reject, notify) {
+            var p2 = Promise.run(function (resolve, reject, notify) {
                 setTimeout(resolve, 100, 'resolved2');
             });
 
@@ -195,11 +195,11 @@ QUnit.module('Combination', function () {
 
             var done = assert.async();
 
-            var p1 = Promise.exec(function (resolve, reject, notify) {
+            var p1 = Promise.run(function (resolve, reject, notify) {
                 setTimeout(resolve, 200, 'resolved1');
             });
 
-            var p2 = Promise.exec(function (resolve, reject, notify) {
+            var p2 = Promise.run(function (resolve, reject, notify) {
                 setTimeout(reject, 100, 'rejected2');
             });
 
@@ -220,11 +220,11 @@ QUnit.module('Combination', function () {
 
             var done = assert.async();
 
-            var p1 = Promise.exec(function (resolve, reject, notify) {
+            var p1 = Promise.run(function (resolve, reject, notify) {
                 setTimeout(resolve, 200, 'resolved1');
             });
 
-            var p2 = Promise.exec(function (resolve, reject, notify) {
+            var p2 = Promise.run(function (resolve, reject, notify) {
                 setTimeout(resolve, 100, 'resolved2');
             });
 
@@ -242,11 +242,11 @@ QUnit.module('Combination', function () {
 
             var done = assert.async();
 
-            var p1 = Promise.exec(function (resolve, reject, notify) {
+            var p1 = Promise.run(function (resolve, reject, notify) {
                 setTimeout(resolve, 200, 'resolved1');
             });
 
-            var p2 = Promise.exec(function (resolve, reject, notify) {
+            var p2 = Promise.run(function (resolve, reject, notify) {
                 setTimeout(reject, 100, 'rejected2');
             });
 
@@ -267,7 +267,7 @@ QUnit.test('Execution flow', function (assert) {
     var done = assert.async();
     var i = 0;
 
-    var p1 = Promise.exec(function (resolve, reject, notify) {
+    var p1 = Promise.run(function (resolve, reject, notify) {
         setTimeout(resolve, 100, i++);
     });
 

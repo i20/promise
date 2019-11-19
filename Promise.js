@@ -11,7 +11,7 @@ var nextTick = typeof process === 'object' && process.nextTick ? function (callb
     process.nextTick(callback, param);
 } : _global.postMessage ? (function () { // Otherwise try using window messaging that is still pretty fast
 
-    var messageType = 'i20-promise-job';
+    var messageType = 'promise-job';
     var pool = [];
     var i = -1;
 
@@ -63,6 +63,8 @@ function noopReject (error) {
 
 function Promise (_executor) {
 
+    // Private vars
+
     var self = this;
 
     var _state = STATE_PENDING;
@@ -70,39 +72,59 @@ function Promise (_executor) {
     var _queue = [];
     var _watchers = [];
 
-    // Privileged methods
+    // Private methods
+
+    function _solver (nextState) {
+
+        return function (value) {
+
+            // Prevent multiple calls to resolve and reject inside executor, a promise is solved only once
+            if (_state !== STATE_RUNNING) return;
+
+            _state = nextState;
+            _value = value;
+
+            var next;
+            while (next = _queue.shift())
+                next.run();
+        };
+    }
+
+    // Privileged public methods
     // https://crockford.com/javascript/private.html
 
-    self.execute = function () {
+    self.run = function () {
 
-        // Prevent re-executing a promise
-        if (_state !== STATE_PENDING) return;
+        nextTick(function () {
 
-        _state = STATE_RUNNING;
+            // Prevent re-executing a promise
+            if (_state !== STATE_PENDING) return;
 
-        try {
-            _executor( _solver(STATE_RESOLVED), _solver(STATE_REJECTED), function (notification) {
+            _state = STATE_RUNNING;
 
-                // Stop notifications as soon as promise is solved
-                // Useful when being notified by raced promises via Promise.race
-                if (_state !== STATE_RUNNING) return;
+            try {
+                _executor( _solver(STATE_RESOLVED), _solver(STATE_REJECTED), function (notification) {
 
-                for (var i = 0; i < _watchers.length; i++)
-                    nextTick(_watchers[i], notification);
-            });
-        }
-        // Handle throw in executor as a reject call
-        catch (error) {
-            _solver(STATE_REJECTED)(error);
-        }
+                    // Stop notifications as soon as promise is solved
+                    // Useful when being notified by raced promises via Promise.race
+                    if (_state !== STATE_RUNNING) return;
+
+                    for (var i = 0; i < _watchers.length; i++)
+                        nextTick(_watchers[i], notification);
+                });
+            }
+            // Handle throw in executor as a reject call
+            catch (error) {
+                _solver(STATE_REJECTED)(error);
+            }
+        });
 
         return self;
     };
 
     self.then = function (resolve, reject, notify) {
 
-        if (notify)
-            _watchers.push(notify);
+        if (notify) _watchers.push(notify);
 
         var promise = new Promise(function (nextResolve, nextReject, nextNotify) {
 
@@ -126,14 +148,12 @@ function Promise (_executor) {
             else (success ? nextResolve : nextReject)(result);
         });
 
-        // Promise is not solved yet
-        // Enqueue a child promise that will be executed when current finishes
+        // Parent promise is not solved yet
+        // Enqueue a child promise that will be executed when parent solves
         if (_state < STATE_RESOLVED) _queue.push(promise);
 
-        // Promise has already been solved at binding time
-        else nextTick(function () {
-            promise.execute();
-        });
+        // Else parent promise has already been solved at binding time and child promise should have execute too
+        else promise.run();
 
         return promise;
     };
@@ -141,26 +161,6 @@ function Promise (_executor) {
     self.getState = function () {
         return _state;
     };
-
-    // Private methods
-
-    function _solver (nextState) {
-
-        return function (value) {
-
-            // Prevent multiple calls to resolve and reject inside executor, a promise is solved only once
-            if (_state !== STATE_RUNNING) return;
-
-            _state = nextState;
-            _value = value;
-
-            while ( _queue.length ) {
-                nextTick(function (next) {
-                    next.execute();
-                }, _queue.shift());
-            }
-        };
-    }
 }
 
 // STATIC METHODS AND CONSTANTS
@@ -170,13 +170,13 @@ Promise.STATE_RUNNING = STATE_RUNNING;
 Promise.STATE_RESOLVED = STATE_RESOLVED;
 Promise.STATE_REJECTED = STATE_REJECTED;
 
-Promise.exec = function (executor) {
-    return new Promise(executor).execute();
+Promise.run = function (executor) {
+    return new Promise(executor).run();
 };
 
 Promise.all = function (promises) {
 
-    return Promise.exec(function (resolve, reject, notify) {
+    return Promise.run(function (resolve, reject, notify) {
 
         // List of result values of each promises
         // Values are in same order as promises list
@@ -201,7 +201,7 @@ Promise.all = function (promises) {
 
 Promise.race = function (promises) {
 
-    return Promise.exec(function (resolve, reject, notify) {
+    return Promise.run(function (resolve, reject, notify) {
         for (var i = 0; i < promises.length; i++)
             // Pass notify callback to allow raced promised to notify
             // Is it a good idea? I don't know but if you don't like it then don't use it!
