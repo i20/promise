@@ -209,6 +209,20 @@ Promise.race = function (promises) {
     });
 };
 
+// Converts an RxJS Observable to a Promise the generic way or the one shot way
+// earlyResolution = false : Promise may never resolve if Observable#complete is never called
+// earlyResolution = true : Promise is resolved on first emitted value from Observable (or completion)
+Promise.fromObservable = function (observable, earlyResolution) {
+
+    return Promise.run(function (resolve, reject, notify) {
+        observable.subscribe({
+            next: earlyResolution ? resolve : notify,
+            error: reject,
+            complete: resolve
+        });
+    });
+};
+
 // EXPOSE LIBRARY TO THE OUTSIDE
 
 // Node.js module format (preferred)
