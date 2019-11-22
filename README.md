@@ -6,6 +6,7 @@
     4. [Chain promises](#chain-promises)
     5. [Follow a promise progress](#follow-a-promise-progress)
     6. [Combine promises](#combine-promises)
+    7. [Dealing with RxJS Observables](#dealing-with-rxjs-observables)
 3. [API Reference](#api-reference)
 4. [Tests](#tests)
 5. [In the pipe](#in-the-pipe)
@@ -263,6 +264,49 @@ Promise.race([p1, p2]).then(function (value) {
 
 NB : Note that eventual notifications from combined promises `p1` and `p2` will be passed in the order they happen to the resulting promise watchers, see the [*Follow a promise progress*](#follow-a-promise-progress) section. Notifications from late promises won't no more be catched as soon as a resolution state will be determined.
 
+## Dealing with RxJS Observables
+
+If your project uses [*RxJS Observables*](https://rxjs-dev.firebaseapp.com/guide/observable) like many new Angular apps but you still prefer to manipulate promises, you can create a promise from an *Observable* the following way :
+
+```javascript
+var observable = new Observable(function (subscriber) {
+    subscriber.next(1);
+    subscriber.next(2);
+    subscriber.next(3);
+    subscriber.complete();
+});
+
+var promise = Promise.fromObservable(observable);
+promise.then(
+    function () { console.log('Promise resolved'); },
+    function (error) { console.log('Promise rejected'); },
+    function (notification) { console.log(notification); }
+);
+
+// Will console.log '1', '2', '3' and then 'Promise resolved'
+```
+
+Observable values flow is handled as promise notifications. Promise resolution is triggered by observable completion (therefore with no value) and error stay error regardless the concept *Promise*/*Observable*.
+
+NB : If the observable never completes (no call to `subscriber.complete`), then resulting promise will never resolve.
+
+---
+
+When you know an observable will return only one value and you want to resolve the promise with it you can set the second parameter of `Promise.fromObservable` to `true` to apply *early resolution* :
+
+```javascript
+var observable = SomeAngularService.http.get(someURL);
+
+var promise = Promise.fromObservable(observable, true);
+promise.then(function (data) {
+    console.log('Promise resolved with data from HTTP', data);
+}, function (error) {
+    console.log('Promise rejected');
+});
+```
+
+By using *early resolution* the promise will be resolved with the first emitted value from the observable.
+
 # API Reference
 
 `Promise.run(function (resolve, reject, notify) { ... })` takes an **executor function** and returns a new promise that is instantly executed, see the [*Create a promise*](#create-a-promise) section.
@@ -296,6 +340,10 @@ The new promise returned will be resolved with the return value of the `resolveC
 ---
 
 `Promise.race([promises])` takes an array of promises and returns a new one that will be **resolved**/**rejected** the same way the **first finishing** passed in promise will be.
+
+---
+
+`Promise.fromObservable(observable, earlyResolution)` create a *Promise* from an *RxJS Observable*, see the [*Dealing with RxJS Observables*](#dealing-with-rxjs-observables) section.
 
 ---
 
