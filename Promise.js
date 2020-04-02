@@ -209,6 +209,20 @@ Promise.race = function (promises) {
     });
 };
 
+Promise.resolve = function (value) {
+
+    return Promise.run(function (resolve, reject, notify) {
+        resolve(value);
+    });
+};
+
+Promise.reject = function (error) {
+
+    return Promise.run(function (resolve, reject, notify) {
+        reject(error);
+    });
+};
+
 // Converts an RxJS Observable to a Promise the generic way or the one shot way
 // earlyResolution = false : Promise may never resolve if Observable#complete is never called
 // earlyResolution = true : Promise is resolved on first emitted value from Observable (or completion)
