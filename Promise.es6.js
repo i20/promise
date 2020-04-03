@@ -1,33 +1,33 @@
-(function (undefined) {
+(undefined => {
 
 'use strict';
 
 // Do not reuse "global" to be min-safe when shrinking vars + it would be a bad practice
-var _global = typeof window === 'object' ? window : // Basic browser context
-              typeof global === 'object' ? global : // NodeJS context
-              this; // Some unknown context
+const _global = typeof window === 'object' ? window : // Basic browser context
+                typeof global === 'object' ? global : // NodeJS context
+                this; // Some unknown context
 
-var nextTick = typeof process === 'object' && process.nextTick
+const nextTick = typeof process === 'object' && process.nextTick
 
     // Prefer NodeJS method if defined since it creates microtasks
-    ? function (callback, param) {
+    ? (callback, param) => {
         process.nextTick(callback, param);
     }
 
     : _global.postMessage
 
         // Otherwise try using window messaging that is still pretty fast
-        ? (function () {
+        ? (() => {
 
-            var messageType = 'promise-job';
-            var pool = [];
-            var i = -1;
+            const messageType = 'promise-job';
+            const pool = [];
+            let i = -1;
 
-            _global.addEventListener('message', function (event) {
+            _global.addEventListener('message', event => {
 
                 if (event.source === _global && event.data.type === messageType) {
 
-                    var job = pool[event.data.i];
+                    const job = pool[event.data.i];
 
                     if (job) {
                         event.stopPropagation();
@@ -38,7 +38,7 @@ var nextTick = typeof process === 'object' && process.nextTick
 
             }, true);
 
-            return function (callback, param) {
+            return (callback, param) => {
 
                 pool[++i] = {
                     callback: callback,
@@ -54,15 +54,15 @@ var nextTick = typeof process === 'object' && process.nextTick
         })()
 
         // Cheap fallback to a macrotask
-        : function (callback, param) {
+        : (callback, param) => {
             _global.setTimeout(callback, 0, param);
         };
 
 // Avoid directly exposing states values, this way states values are always correct when checking internally even if exposed constants were modified from outside
-var STATE_PENDING = 0;
-var STATE_RUNNING = 1;
-var STATE_RESOLVED = 2;
-var STATE_REJECTED = 3;
+const STATE_PENDING = 0;
+const STATE_RUNNING = 1;
+const STATE_RESOLVED = 2;
+const STATE_REJECTED = 3;
 
 function noopResolve (value) {
     return value;
@@ -76,18 +76,18 @@ function Promise (_executor) {
 
     // Private vars
 
-    var self = this;
+    const self = this;
 
-    var _state = STATE_PENDING;
-    var _value;
-    var _queue = [];
-    var _watchers = [];
+    let _state = STATE_PENDING;
+    let _value;
+    const _queue = [];
+    const _watchers = [];
 
     // Private methods
 
     function _solver (nextState) {
 
-        return function (value) {
+        return value => {
 
             // Prevent multiple calls to resolve and reject inside executor, a promise is solved only once
             if (_state !== STATE_RUNNING) return;
@@ -95,7 +95,7 @@ function Promise (_executor) {
             _state = nextState;
             _value = value;
 
-            var next;
+            let next;
             while (next = _queue.shift())
                 next.run();
         };
@@ -104,9 +104,9 @@ function Promise (_executor) {
     // Privileged public methods
     // https://crockford.com/javascript/private.html
 
-    self.run = function () {
+    self.run = () => {
 
-        nextTick(function () {
+        nextTick(() => {
 
             // Prevent re-executing a promise
             if (_state !== STATE_PENDING) return;
@@ -114,14 +114,14 @@ function Promise (_executor) {
             _state = STATE_RUNNING;
 
             try {
-                _executor( _solver(STATE_RESOLVED), _solver(STATE_REJECTED), function (notification) {
+                _executor( _solver(STATE_RESOLVED), _solver(STATE_REJECTED), notification => {
 
                     // Stop notifications as soon as promise is solved
                     // Useful when being notified by raced promises via Promise.race
                     if (_state !== STATE_RUNNING) return;
 
-                    for (var i = 0; i < _watchers.length; i++)
-                        nextTick(_watchers[i], notification);
+                    for (const watcher of _watchers)
+                        nextTick(watcher, notification);
                 });
             }
             // Handle throw in executor as a reject call
@@ -133,14 +133,14 @@ function Promise (_executor) {
         return self;
     };
 
-    self.then = function (resolve, reject, notify) {
+    self.then = (resolve, reject, notify) => {
 
         if (notify) _watchers.push(notify);
 
-        var promise = new Promise(function (nextResolve, nextReject, nextNotify) {
+        const promise = new Promise((nextResolve, nextReject, nextNotify) => {
 
-            var result;
-            var success;
+            let result;
+            let success;
 
             try {
                 result = (_state === STATE_RESOLVED ? resolve || noopResolve : reject || noopReject)(_value);
@@ -169,7 +169,7 @@ function Promise (_executor) {
         return promise;
     };
 
-    self.getState = function () {
+    self.getState = () => {
         return _state;
     };
 }
@@ -181,72 +181,56 @@ Promise.STATE_RUNNING = STATE_RUNNING;
 Promise.STATE_RESOLVED = STATE_RESOLVED;
 Promise.STATE_REJECTED = STATE_REJECTED;
 
-Promise.run = function (executor) {
-    return new Promise(executor).run();
-};
+Promise.run = executor => new Promise(executor).run();
 
-Promise.all = function (promises) {
+Promise.all = promises => Promise.run((resolve, reject, notify) => {
 
-    return Promise.run(function (resolve, reject, notify) {
+    // List of result values of each promises
+    // Values are in same order as promises list
+    const values = [];
 
-        // List of result values of each promises
-        // Values are in same order as promises list
-        var values = [];
+    for (let i = 0; i < promises.length; i++) (i => {
+        promises[i].then(value => {
 
-        for (var i = 0; i < promises.length; i++) (function (i) {
-            promises[i].then(function (value) {
+            values[i] = value;
 
-                values[i] = value;
+            for (const promise of promises)
+                if (promise.getState() !== STATE_RESOLVED)
+                    return;
 
-                for (var j = 0; j < promises.length; j++)
-                    if (promises[j].getState() !== STATE_RESOLVED)
-                        return;
+            // Only first call to solve callback will do something
+            resolve(values);
 
-                // Only first call to solve callback will do something
-                resolve(values);
+        }, reject, notify); // Same remark as Promise.race for the notify callback
+    })(i);
+});
 
-            }, reject, notify); // Same remark as Promise.race for the notify callback
-        })(i);
-    });
-};
+Promise.race = promises => Promise.run((resolve, reject, notify) => {
 
-Promise.race = function (promises) {
+    for (const promise of promises)
+        // Pass notify callback to allow raced promised to notify
+        // Is it a good idea? I don't know but if you don't like it then don't use it!
+        promise.then(resolve, reject, notify);
+});
 
-    return Promise.run(function (resolve, reject, notify) {
-        for (var i = 0; i < promises.length; i++)
-            // Pass notify callback to allow raced promised to notify
-            // Is it a good idea? I don't know but if you don't like it then don't use it!
-            promises[i].then(resolve, reject, notify);
-    });
-};
+Promise.resolve = value => Promise.run((resolve, reject, notify) => {
+    resolve(value);
+});
 
-Promise.resolve = function (value) {
-
-    return Promise.run(function (resolve, reject, notify) {
-        resolve(value);
-    });
-};
-
-Promise.reject = function (error) {
-
-    return Promise.run(function (resolve, reject, notify) {
-        reject(error);
-    });
-};
+Promise.reject = error => Promise.run((resolve, reject, notify) => {
+    reject(error);
+});
 
 // Converts an RxJS Observable to a Promise the generic way or the one shot way
 // earlyResolution = false : Promise may never resolve if Observable#complete is never called
 // earlyResolution = true : Promise is resolved on first emitted value from Observable (or completion)
-Promise.fromObservable = function (observable, earlyResolution) {
-
-    return Promise.run(function (resolve, reject, notify) {
-        observable.subscribe({
-            next: earlyResolution ? resolve : notify,
-            error: reject,
-            complete: resolve
-        });
+Promise.fromObservable = (observable, earlyResolution) => Promise.run((resolve, reject, notify) => {
+    observable.subscribe({
+        next: earlyResolution ? resolve : notify,
+        error: reject,
+        complete: resolve
     });
-};
+});
 
 // EXPOSE LIBRARY TO THE OUTSIDE
 
@@ -257,7 +241,7 @@ if (typeof module === 'object' && typeof module.exports === 'object')
 // Old browser global exposition (with noConflict method)
 else {
 
-    Promise.noConflict = function () {
+    Promise.noConflict = () => {
         _global.Promise = Promise.conflicted;
         return Promise;
     };
