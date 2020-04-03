@@ -64,6 +64,8 @@ var STATE_RUNNING = 1;
 var STATE_RESOLVED = 2;
 var STATE_REJECTED = 3;
 
+function noop () {}
+
 function noopResolve (value) {
     return value;
 }
@@ -95,9 +97,15 @@ function Promise (_executor) {
             _state = nextState;
             _value = value;
 
-            var next;
-            while (next = _queue.shift())
-                next.run();
+            if (_queue.length) {
+                var next;
+                while (next = _queue.shift())
+                    next.run();
+            }
+
+            // Make unhandled rejected promises throw an exception instead of silently fail
+            else if (_state === STATE_REJECTED)
+                throw _value;
         };
     }
 
@@ -113,21 +121,20 @@ function Promise (_executor) {
 
             _state = STATE_RUNNING;
 
-            try {
-                _executor( _solver(STATE_RESOLVED), _solver(STATE_REJECTED), function (notification) {
+            _executor( _solver(STATE_RESOLVED), _solver(STATE_REJECTED), function (notification) {
 
-                    // Stop notifications as soon as promise is solved
-                    // Useful when being notified by raced promises via Promise.race
-                    if (_state !== STATE_RUNNING) return;
+                // Stop notifications as soon as promise is solved
+                // Useful when being notified by raced promises via Promise.race
+                if (_state !== STATE_RUNNING) return;
 
-                    for (var i = 0; i < _watchers.length; i++)
-                        nextTick(_watchers[i], notification);
-                });
-            }
-            // Handle throw in executor as a reject call
-            catch (error) {
-                _solver(STATE_REJECTED)(error);
-            }
+                for (var i = 0; i < _watchers.length; i++)
+                    nextTick(_watchers[i], notification);
+            });
+
+            // /!\ Do not handle throwing from executor, anyway it would catch only synchronous throws
+            // It is coherent with the return behavior (powerless inside executor)
+            // Executor is made for asynchrounous business, just use resolve()/reject() inside it
+            // By not try-catching executor, we can then throw from _solver() to make unhandled rejections noisy !
         });
 
         return self;
@@ -142,13 +149,22 @@ function Promise (_executor) {
             // /!\ If run() is called manually on the new promise whereas parent promise has not
             // solved yet then new promise will be rejected with an undefined value
 
-            var result = (_state === STATE_RESOLVED ? resolve || noopResolve : reject || noopReject)(_value);
+            // /!\ At the opposite of executor, then() handlers are made to use return/throw
 
-            // If handler returns a promise then, it "replaces" the current promise
-            if (result instanceof Promise)
-                result.then(nextResolve, nextReject, nextNotify);
+            try {
 
-            else nextResolve(result);
+                var result = (_state === STATE_RESOLVED ? resolve || noopResolve : reject || noopReject)(_value);
+
+                // If handler returns a promise then, it "replaces" the current promise
+                if (result instanceof Promise)
+                    result.then(nextResolve, nextReject, nextNotify);
+
+                else nextResolve(result);
+            }
+
+            catch (error) {
+                nextReject(error);
+            }
         });
 
         // Parent promise is not solved yet
@@ -159,6 +175,10 @@ function Promise (_executor) {
         else promise.run();
 
         return promise;
+    };
+
+    self.catch = function (reject) {
+        return self.then(null, reject || noop);
     };
 
     self.getState = function () {

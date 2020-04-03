@@ -32,21 +32,21 @@ QUnit.module('Core behavior', function () {
         });
     });
 
-    QUnit.test('Rejection by throwing from executor (only synchronous throw)', function (assert) {
+    // QUnit.test('Rejection by throwing from executor (only synchronous throw)', function (assert) {
 
-        var done = assert.async();
+    //     var done = assert.async();
 
-        Promise.run(function (resolve, reject, notify) {
-            throw 'rejected';
-        }).then(function (value) {
-            assert.ok(false, 'Successfully rejected');
-            done();
-        }, function (error) {
-            assert.ok(true, 'Successfully rejected');
-            assert.strictEqual(error, 'rejected', 'Rejection value is correct');
-            done();
-        });
-    });
+    //     Promise.run(function (resolve, reject, notify) {
+    //         throw 'rejected';
+    //     }).then(function (value) {
+    //         assert.ok(false, 'Successfully rejected');
+    //         done();
+    //     }, function (error) {
+    //         assert.ok(true, 'Successfully rejected');
+    //         assert.strictEqual(error, 'rejected', 'Rejection value is correct');
+    //         done();
+    //     });
+    // });
 
     QUnit.test('Solving defer', function (assert) {
 
@@ -88,6 +88,40 @@ QUnit.module('Core behavior', function () {
             assert.strictEqual(notif, i, 'Notification value is correct');
         });
     });
+
+    QUnit.test('Catching with callback', function (assert) {
+
+        var done = assert.async();
+
+        Promise.run(function (resolve, reject, notify) {
+            reject('rejected');
+        }).catch(function (error) {
+            assert.ok(true, 'Successfully catched');
+            assert.strictEqual(error, 'rejected', 'Catched value is correct');
+            done();
+        });
+    });
+
+    QUnit.test('Catching without callback', function (assert) {
+
+        var done = assert.async();
+
+        Promise.run(function (resolve, reject, notify) {
+            reject('rejected');
+        }).catch().then(function () {
+            assert.ok(true, 'Successfully catched');
+            done();
+        });
+    });
+
+    // QUnit.test('Unhandled rejection rising', function (assert) {
+
+    //     var done = assert.async();
+
+    //     Promise.run(function (resolve, reject, notify) {
+    //         reject('rejected');
+    //     });
+    // });
 });
 
 QUnit.module('Chaining', function () {
