@@ -139,24 +139,16 @@ function Promise (_executor) {
 
         const promise = new Promise((nextResolve, nextReject, nextNotify) => {
 
-            let result;
-            let success;
+            // /!\ If run() is called manually on the new promise whereas parent promise has not
+            // solved yet then new promise will be rejected with an undefined value
 
-            try {
-                result = (_state === STATE_RESOLVED ? resolve || noopResolve : reject || noopReject)(_value);
-                success = true;
-            }
+            const result = (_state === STATE_RESOLVED ? resolve || noopResolve : reject || noopReject)(_value);
 
-            catch (error) {
-                result = error;
-                success = false;
-            }
-
-            // If handler's result is a promise then, whether it was thrown or returned, it "replaces" the current promise
+            // If handler returns a promise then, it "replaces" the current promise
             if (result instanceof Promise)
                 result.then(nextResolve, nextReject, nextNotify);
 
-            else (success ? nextResolve : nextReject)(result);
+            else nextResolve(result);
         });
 
         // Parent promise is not solved yet
