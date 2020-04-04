@@ -132,8 +132,10 @@ function Promise (_executor) {
 
                     const result = (_state === STATE_RESOLVED ? resolve || noopResolve : reject || noopReject)(_value);
 
-                    // If handler returns a promise then, it "replaces" the current promise
-                    if (result instanceof Promise)
+                    // If handler returns a promise then current promise resolution is bound to returned's one
+                    // Assimilate all thenable objects to handled returning a variety of other promise implementations
+                    // Natives, Qs, Bluebirds, ZoneAwarePromises ...
+                    if (result && typeof result.then === 'function')
                         result.then(nextResolve, nextReject, nextNotify);
 
                     else nextResolve(result);
