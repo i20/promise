@@ -1,3 +1,4 @@
+// Version 2.0.0
 (function (undefined) {
 
 'use strict';

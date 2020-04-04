@@ -12,6 +12,12 @@
 5. [In the pipe](#in-the-pipe)
 6. [References](#references)
 
+:warning: V2's here ! Lots of improvements made :
+
+- no more `Promise#run()`
+- unhandled rejections raise exceptions
+- handy utilities added : `Promise.resolve`, `Promise.reject`, `Promise#catch`
+
 # About
 
 **Promise.js** is a simple and lightweight JS promise library inspired by *Angular's $q* and [*Kris Kowal's Q*](https://github.com/kriskowal/q).
@@ -29,12 +35,14 @@ Promises are **now native** in most up-to-date JS engines via the constructor `P
 - if you use it through *NodeJS* then it is exposed as a module and you just need to `var Promise = require('./Promise.js');`
 - otherwise if you included it via a traditionnal `<script>` tag then it is injected as the global `Promise` (see `Promise.noConflict()`)
 
+The library comes with an ES6 flavor (**Promise.es6.js**) that is basically just a rewriting of the original code using *arrow functions* and *const*/*let* instead of *var*.
+
 ## Create a promise
 
 You can create a promise from any asynchronous code by wrapping it in an **executor function** as follow :
 
 ```javascript
-var myPromise = Promise.run(function (resolve, reject, notify) {
+var myPromise = new Promise(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'Hello world !');
 });
 ```
@@ -47,23 +55,6 @@ NB1 : Note that as a promise can be whether resolved *or* rejected only once, mu
 
 NB2 : Throwing something in the *executor function* will have the same effect as calling `reject` and passing it the thrown value as parameter.
 
----
-
-Alternatively, you can create a new promise that will not be executed right away by using the constructor `new Promise(function (resolve, reject, notify) { ... })`. The `Promise` object created will be executed only once `Promise#run()` will be called :
-
-```javascript
-var myPromise = new Promise(function (resolve, reject, notify) {
-    console.log('Promise executed !');
-});
-
-setTimeout(function () {
-    myPromise.run();
-}, 1000);
-
-// console.log will happen at least 2000 ms after
-```
-In fact `Promise.run(executor)` is a shorthand for `new Promise(executor).run()`.
-
 ## Wait for a promise to be resolved/rejected
 
 Every `Promise` object has a method `Promise#then` that allows you to attach callbacks to be executed whenever the promise will solve. `Promise#then` takes 3 parameters :
@@ -73,7 +64,7 @@ Every `Promise` object has a method `Promise#then` that allows you to attach cal
 - a **notification** callback, see the [*Follow a promise progress*](#follow-a-promise-progress) section.
 
 ```javascript
-var myPromise = Promise.run(function (resolve, reject, notify) {
+var myPromise = new Promise(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'Hello world !');
 });
 
@@ -87,7 +78,7 @@ myPromise.then(function (value) {
 In the example above we attached a callback to the resolution of the promise but we can also listen for rejection :
 
 ```javascript
-var myPromise = Promise.run(function (resolve, reject, notify) {
+var myPromise = new Promise(function (resolve, reject, notify) {
     setTimeout(function () {
 
         Math.random() * 10 < 5 ?
@@ -99,20 +90,22 @@ var myPromise = Promise.run(function (resolve, reject, notify) {
 });
 
 myPromise.then(function (value) {
-    console.log('Successed with :', value);
+    console.log('Succeeded with :', value);
 }, function (error) {
     console.log('Failed with :', error);
 });
 ```
 
-:warning: Callbacks attached via `Promise#then` will always be run asynchronously. Asynchronous execution of handlers guarantees you that `Promise#then` will always return before the handler is called (even if it has been attached on an already solved promise). **Promise.js** tries to use the fastest asynchronous scheduling method, prefering microtasks over macrotasks when available. If you don't know much about these I encourage you to have a look at this [amazing post](https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/).
+:warning: Any promise that is rejected without having a rejection callback attached will raise an exception ! It avoids rejected promises to silently fail and saves you hours of debugging to find out why your code does not work despite no error showing.
+
+:warning: Promises are always solved asynchronously despite their executor function is called right away. It guarantees you that `new Promise` and `Promise#then` will always return a promise that hasn't solved yet. **Promise.js** tries to use the fastest asynchronous scheduling method, prefering microtasks over macrotasks when available. If you don't know much about these I encourage you to have a look at this [amazing post](https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/).
 
 ## Chain promises
 
 `Promise#then` returns a new promise and therefore allows you to chain calls :
 
 ```javascript
-Promise.run(function (resolve, reject, notify) {
+new Promise(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'P1');
 }).then(function (value) {
     return value.toLowerCase();
@@ -126,7 +119,7 @@ Promise.run(function (resolve, reject, notify) {
 You can also reject any promise in the chain by throwing an error :
 
 ```javascript
-Promise.run(function (resolve, reject, notify) {
+new Promise(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'P1');
 }).then(function (value) {
     throw 'I am not in the mood';
@@ -142,10 +135,10 @@ Promise.run(function (resolve, reject, notify) {
 You can also, and it's a very common case, return another promise :
 
 ```javascript
-Promise.run(function (resolve, reject, notify) {
+new Promise(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 2000);
 }).then(function (value) {
-    return Promise.run(function (resolve, reject, notify) {
+    return new Promise(function (resolve, reject, notify) {
         setTimeout(resolve, value, 'Timers done !');
     });
 }).then(function (value) {
@@ -158,7 +151,7 @@ Promise.run(function (resolve, reject, notify) {
 When a promise is resolved but you didn't provided a `resolveCallback` to `Promise#then` *or* is rejected but no `rejectCallback` was provided, then the new promise returned keeps the parent promise state :
 
 ```javascript
-Promise.run(function (resolve, reject, notify) {
+new Promise(function (resolve, reject, notify) {
     setTimeout(reject, 1000, 'Timer failed');
 }).then(function (value) {
     console.log('Timer done !');
@@ -172,7 +165,7 @@ Promise.run(function (resolve, reject, notify) {
 Now imagine replacing all these `setTimeout` calls by some AJAX ones ! If you're an adept of *jQuery's* `$.ajax` you can for example :
 
 ```javascript
-Promise.run(function (resolve, reject, notify) {
+new Promise(function (resolve, reject, notify) {
     $.ajax({
         url: 'www.example.com',
         success: function (data, textStatus, jqXHR) {
@@ -194,7 +187,7 @@ Promise.run(function (resolve, reject, notify) {
 It can be useful for example in a case of file upload to be able to follow the upload promise progress to display a progress indicator to the end user, that's what the `notifyCallback` of `Promise#then` is done for !
 
 ```javascript
-var p = Promise.run(function (resolve, reject, notify) {
+var p = new Promise(function (resolve, reject, notify) {
 
     var i = 0;
 
@@ -229,11 +222,11 @@ var p = Promise.run(function (resolve, reject, notify) {
 If running multiple promises in parallel, you can combine them to wait for the whole with `Promise.all` :
 
 ```javascript
-var p1 = Promise.run(function (resolve, reject, notify) {
+var p1 = new Promise(function (resolve, reject, notify) {
     setTimeout(resolve, 2000, 'p1');
 });
 
-var p2 = Promise.run(function (resolve, reject, notify) {
+var p2 = new Promise(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'p2');
 });
 
@@ -247,11 +240,11 @@ Promise.all([p1, p2]).then(function (values) {
 Or race them to find the first to solve with `Promise.race` :
 
 ```javascript
-var p1 = Promise.run(function (resolve, reject, notify) {
+var p1 = new Promise(function (resolve, reject, notify) {
     setTimeout(resolve, 2000, 'p1');
 });
 
-var p2 = Promise.run(function (resolve, reject, notify) {
+var p2 = new Promise(function (resolve, reject, notify) {
     setTimeout(resolve, 1000, 'p2');
 });
 
@@ -309,26 +302,21 @@ By using *early resolution* the promise will be resolved with the first emitted 
 
 # API Reference
 
-`Promise.run(function (resolve, reject, notify) { ... })` takes an **executor function** and returns a new promise that is instantly executed, see the [*Create a promise*](#create-a-promise) section.
-
----
-
 `Promise#getState()` returns the promise state :
 
-- `Promise.STATE_PENDING` = promise has been created but code execution has not been triggered
-- `Promise.STATE_RUNNING` = promise execution has started but is always running
+- `Promise.STATE_PENDING` =  promise has not been solved yet (initial state)
 - `Promise.STATE_RESOLVED` = promise has been resolved (terminal state)
 - `Promise.STATE_REJECTED` = promise has been rejected (terminal state)
-
----
-
-`Promise#run()` triggers promise execution and returns it, see the [*Create a promise*](#create-a-promise) section.
 
 ---
 
 `Promise#then(resolveCallback, rejectCallback, notifyCallback)` attaches resolution callbacks to a promise and returns a new promise on top of `resolveCallback` *or* `rejectCallback` execution depending on promise final status. The `notifyCallback` can be used to attach a watcher function on the progress of the promise, see the [*Follow a promise progress*](#follow-a-promise-progress) section.
 
 The new promise returned will be resolved with the return value of the `resolveCallback`/`rejectCallback` *or* be rejected with the value thrown from them. If a `Promise` object is explicitly returned then the resulting promise will become that returned promise, see the [*Chain promises*](#chain-promises) section.
+
+---
+
+`Promise#catch(rejectCallback)` is a shortcut for `Promise#then(null, rejectCallback)` the only difference is, if `rejectCallback` is omitted, `Promise#catch()` will still catch the rejection and prevent an exception from rising.
 
 ---
 
@@ -344,6 +332,14 @@ The new promise returned will be resolved with the return value of the `resolveC
 ---
 
 `Promise.fromObservable(observable, earlyResolution)` create a *Promise* from an *RxJS Observable*, see the [*Dealing with RxJS Observables*](#dealing-with-rxjs-observables) section.
+
+---
+
+`Promise.resolve(value)` create a promise that resolves with the value optionally provided.
+
+---
+
+`Promise.reject(value)` create a promise that rejects with the value optionally provided.
 
 ---
 
@@ -366,7 +362,6 @@ var PromiseJS = Promise.noConflict();
 # In the pipe
 
 - Implement a `finally` callback.
-- Make unhandled rejections throw an exception.
 - Improve `nextTick` asynchronous scheduling (`Object.observe`, `MutationObserver`).
 
 # References
