@@ -59,8 +59,7 @@ const nextTick = typeof process === 'object' && process.nextTick
         };
 
 // Avoid directly exposing states values, this way states values are always correct when checking internally even if exposed constants were modified from outside
-const STATE_PENDING = 0;
-const STATE_RUNNING = 1;
+const STATE_PENDING = 1;
 const STATE_RESOLVED = 2;
 const STATE_REJECTED = 3;
 
@@ -91,107 +90,99 @@ function Promise (_executor) {
 
         return value => {
 
-            // Prevent multiple calls to resolve and reject inside executor, a promise is solved only once
-            if (_state !== STATE_RUNNING) return;
+            // Execute next tick to give a chance to catch any instanlty rejected promise
+            // otherwise Promise.reject().catch() would still raise an exception
+            // + this way behavior is homogeneous, that way promises are always solved asynchronously
+            nextTick(() => {
 
-            _state = nextState;
-            _value = value;
+                // Prevent multiple calls to resolve and reject inside executor, a promise is solved only once
+                if (_state !== STATE_PENDING) return;
 
-            if (_queue.length) {
-                let next;
-                while (next = _queue.shift())
-                    next.run();
-            }
+                _state = nextState;
+                _value = value;
 
-            // Make unhandled rejected promises throw an exception instead of silently fail
-            else if (_state === STATE_REJECTED)
-                throw _value;
+                if (_queue.length) {
+                    let next;
+                    while (next = _queue.shift())
+                        next();
+                        // nextTick(next);
+                }
+
+                // Make unhandled rejected promises throw an exception instead of silently fail
+                // As the solver is executed next tick, this exception won't be catched by executor try/catch
+                else if (_state === STATE_REJECTED)
+                    throw _value;
+            });
         };
     }
 
     // Privileged public methods
     // https://crockford.com/javascript/private.html
 
-    self.run = () => {
-
-        nextTick(() => {
-
-            // Prevent re-executing a promise
-            if (_state !== STATE_PENDING) return;
-
-            _state = STATE_RUNNING;
-
-            _executor( _solver(STATE_RESOLVED), _solver(STATE_REJECTED), notification => {
-
-                // Stop notifications as soon as promise is solved
-                // Useful when being notified by raced promises via Promise.race
-                if (_state !== STATE_RUNNING) return;
-
-                for (const watcher of _watchers)
-                    nextTick(watcher, notification);
-            });
-
-            // /!\ Do not handle throwing from executor, anyway it would catch only synchronous throws
-            // It is coherent with the return behavior (powerless inside executor)
-            // Executor is made for asynchrounous business, just use resolve()/reject() inside it
-            // By not try-catching executor, we can then throw from _solver() to make unhandled rejections noisy !
-        });
-
-        return self;
-    };
-
     self.then = (resolve, reject, notify) => {
 
         if (notify) _watchers.push(notify);
 
-        const promise = new Promise((nextResolve, nextReject, nextNotify) => {
+        return new Promise((nextResolve, nextReject, nextNotify) => {
 
-            // /!\ If run() is called manually on the new promise whereas parent promise has not
-            // solved yet then new promise will be rejected with an undefined value
+            function run () {
 
-            // /!\ At the opposite of executor, then() handlers are made to use return/throw
+                try {
 
-            try {
+                    const result = (_state === STATE_RESOLVED ? resolve || noopResolve : reject || noopReject)(_value);
 
-                const result = (_state === STATE_RESOLVED ? resolve || noopResolve : reject || noopReject)(_value);
+                    // If handler returns a promise then, it "replaces" the current promise
+                    if (result instanceof Promise)
+                        result.then(nextResolve, nextReject, nextNotify);
 
-                // If handler returns a promise then, it "replaces" the current promise
-                if (result instanceof Promise)
-                    result.then(nextResolve, nextReject, nextNotify);
+                    else nextResolve(result);
+                }
 
-                else nextResolve(result);
+                catch (error) {
+                    nextReject(error);
+                }
             }
 
-            catch (error) {
-                nextReject(error);
-            }
+            // If parent promise is not solved yet then enqueue child promise run()
+            // Else parent promise has already been solved at binding time
+            _state === STATE_PENDING ? _queue.push(run) : run();
         });
-
-        // Parent promise is not solved yet
-        // Enqueue a child promise that will be executed when parent solves
-        if (_state < STATE_RESOLVED) _queue.push(promise);
-
-        // Else parent promise has already been solved at binding time and child promise should have execute too
-        else promise.run();
-
-        return promise;
     };
 
     self.catch = reject => self.then(null, reject || noop);
 
     self.getState = () => _state;
+
+    // Run
+    try {
+        // Executor is called synchronously but solver is asynchronous (cf comment in solver)
+        // As solver is asynchronous, notifier has to be othewise we could notify after a solver call
+        _executor( _solver(STATE_RESOLVED), _solver(STATE_REJECTED), (notification) => {
+
+            nextTick(() => {
+                // Stop notifications as soon as promise is solved
+                // Useful when being notified by raced promises via Promise.race
+                if (_state !== STATE_PENDING) return;
+
+                for (const watcher of _watchers)
+                    watcher(notification);
+                    // nextTick(watcher, notification);
+            });
+        });
+    }
+    // Handle exception (synchronous only) from executor as a reject call
+    catch (error) {
+        _solver(STATE_REJECTED)(error);
+    }
 }
 
 // STATIC METHODS AND CONSTANTS
 
 Promise.STATE_PENDING = STATE_PENDING;
-Promise.STATE_RUNNING = STATE_RUNNING;
 Promise.STATE_RESOLVED = STATE_RESOLVED;
 Promise.STATE_REJECTED = STATE_REJECTED;
 
-Promise.run = executor => new Promise(executor).run();
-
-Promise.all = promises => Promise.run((resolve, reject, notify) => {
+Promise.all = promises => new Promise((resolve, reject, notify) => {
 
     // List of result values of each promises
     // Values are in same order as promises list
@@ -213,7 +204,7 @@ Promise.all = promises => Promise.run((resolve, reject, notify) => {
     })(i);
 });
 
-Promise.race = promises => Promise.run((resolve, reject, notify) => {
+Promise.race = promises => new Promise((resolve, reject, notify) => {
 
     for (const promise of promises)
         // Pass notify callback to allow raced promised to notify
@@ -221,18 +212,18 @@ Promise.race = promises => Promise.run((resolve, reject, notify) => {
         promise.then(resolve, reject, notify);
 });
 
-Promise.resolve = value => Promise.run((resolve, reject, notify) => {
+Promise.resolve = value => new Promise((resolve, reject, notify) => {
     resolve(value);
 });
 
-Promise.reject = error => Promise.run((resolve, reject, notify) => {
+Promise.reject = error => new Promise((resolve, reject, notify) => {
     reject(error);
 });
 
 // Converts an RxJS Observable to a Promise the generic way or the one shot way
 // earlyResolution = false : Promise may never resolve if Observable#complete is never called
 // earlyResolution = true : Promise is resolved on first emitted value from Observable (or completion)
-Promise.fromObservable = (observable, earlyResolution) => Promise.run((resolve, reject, notify) => {
+Promise.fromObservable = (observable, earlyResolution) => new Promise((resolve, reject, notify) => {
     observable.subscribe({
         next: earlyResolution ? resolve : notify,
         error: reject,
