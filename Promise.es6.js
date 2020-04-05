@@ -59,7 +59,6 @@ const nextTick = typeof process === 'object' && process.nextTick
             _global.setTimeout(callback, 0, param);
         };
 
-// Avoid directly exposing states values, this way states values are always correct when checking internally even if exposed constants were modified from outside
 const STATE_PENDING = 1;
 const STATE_RESOLVED = 2;
 const STATE_REJECTED = 3;
@@ -154,8 +153,6 @@ function Promise (_executor) {
 
     self.catch = reject => self.then(null, reject || noop);
 
-    self.getState = () => _state;
-
     // Run
     try {
         // Executor is called synchronously but solver is asynchronous (cf comment in solver)
@@ -180,10 +177,6 @@ function Promise (_executor) {
 }
 
 // STATIC METHODS AND CONSTANTS
-
-Promise.STATE_PENDING = STATE_PENDING;
-Promise.STATE_RESOLVED = STATE_RESOLVED;
-Promise.STATE_REJECTED = STATE_REJECTED;
 
 Promise.all = promises => new Promise((resolve, reject, notify) => {
 

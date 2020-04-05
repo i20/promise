@@ -302,14 +302,6 @@ By using *early resolution* the promise will be resolved with the first emitted 
 
 # API Reference
 
-`Promise#getState()` returns the promise state :
-
-- `Promise.STATE_PENDING` =  promise has not been solved yet (initial state)
-- `Promise.STATE_RESOLVED` = promise has been resolved (terminal state)
-- `Promise.STATE_REJECTED` = promise has been rejected (terminal state)
-
----
-
 `Promise#then(resolveCallback, rejectCallback, notifyCallback)` attaches resolution callbacks to a promise and returns a new promise on top of `resolveCallback` *or* `rejectCallback` execution depending on promise final status. The `notifyCallback` can be used to attach a watcher function on the progress of the promise, see the [*Follow a promise progress*](#follow-a-promise-progress) section.
 
 The new promise returned will be resolved with the return value of the `resolveCallback`/`rejectCallback` *or* be rejected with the value thrown from them. If a `Promise` object is explicitly returned then the resulting promise will become that returned promise, see the [*Chain promises*](#chain-promises) section.

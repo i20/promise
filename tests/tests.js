@@ -12,14 +12,14 @@ QUnit.module('Core behavior', function () {
         });
     });
 
-    QUnit.test('Promise solving is always asynchronous', function (assert) {
+    // QUnit.test('Promise solving is always asynchronous', function (assert) {
 
-        var promise = new Promise(function (resolve, reject, notify) {
-            resolve();
-        });
+    //     var promise = new Promise(function (resolve, reject, notify) {
+    //         resolve();
+    //     });
 
-        assert.strictEqual(promise.getState(), Promise.STATE_PENDING, 'State is pending');
-    });
+    //     assert.strictEqual(promise.getState(), Promise.STATE_PENDING, 'State is pending');
+    // });
 
     QUnit.test('Catch instantly rejected promise', function (assert) {
 
