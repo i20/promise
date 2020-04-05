@@ -190,18 +190,16 @@ Promise.all = promises => new Promise((resolve, reject, notify) => {
     // List of result values of each promises
     // Values are in same order as promises list
     const values = [];
+    let resolvedCounter = 0;
 
     for (let i = 0; i < promises.length; i++) (i => {
         promises[i].then(value => {
 
             values[i] = value;
+            resolvedCounter++;
 
-            for (const promise of promises)
-                if (promise.getState() !== STATE_RESOLVED)
-                    return;
-
-            // Only first call to solve callback will do something
-            resolve(values);
+            if (resolvedCounter === promises.length)
+                resolve(values);
 
         }, reject, notify); // Same remark as Promise.race for the notify callback
     })(i);
